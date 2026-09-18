@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand dashboard — The Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --ink:#181512; --ink-2:#211D18; --ink-3:#2A241D; --paper:#F8F4EC;
+    --gold:#FFC93C; --line:rgba(248,244,236,0.14); --dim:rgba(248,244,236,0.6);
+    --stamp:#E4634F; --signal:#3FA679;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--ink); color:var(--paper); font-family:'IBM Plex Sans', sans-serif; min-height:100vh; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:640px; margin:0 auto; padding:0 20px 60px;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:18px 0;}
+  .logo{display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-weight:800; font-size:18px;}
+  .logo-mark{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; background:var(--gold); border-radius:7px; color:var(--ink); font-family:'Fraunces',serif; font-weight:800;}
+  .link-btn{background:none; border:none; color:var(--dim); font-size:13px; cursor:pointer;}
+  #loadingGate, #authGate{text-align:center; padding:100px 24px; color:var(--dim);}
+  #authGate a{color:var(--gold);}
+  main{display:none;}
+  h1{font-family:'Fraunces',serif; font-weight:800; font-size:23px; margin-bottom:4px;}
+  h2{font-family:'Fraunces',serif; font-weight:700; font-size:16px; margin-bottom:12px;}
+  .subtext{color:var(--dim); font-size:13.5px; margin-bottom:20px;}
+  .card{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:16px;}
+  .field{width:100%; background:var(--ink); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--paper); font-size:14px; margin-bottom:12px; outline:none;}
+  .field:focus{border-color:var(--gold);}
+  textarea.field{resize:none; height:90px;}
+  .btn{padding:11px 18px; border-radius:9px; font-size:13.5px; font-weight:600; border:none; cursor:pointer; background:#FFFFFF; color:var(--ink);}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--paper);}
+  .btn-sm{padding:8px 13px; font-size:12.5px; border-radius:7px;}
+  .btn-full{width:100%;}
+  .empty{color:var(--dim); font-size:13px; padding:6px 0;}
+  .result-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);}
+  .result-row:last-child{border-bottom:none;}
+  .result-row b{font-size:14px;}
+  .result-row span{font-size:12px; color:var(--dim); display:block;}
+  .offer-card{background:var(--ink); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:10px;}
+  .offer-card b{font-size:14px; display:block; margin-bottom:2px;}
+  .offer-card .meta{font-size:11.5px; color:var(--dim); margin-bottom:6px;}
+  .badge{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600;}
+  .badge.pending{background:rgba(255,201,60,0.15); color:var(--gold);}
+  .badge.accepted{background:rgba(63,166,121,0.15); color:var(--signal);}
+  .badge.declined{background:rgba(228,99,79,0.15); color:var(--stamp);}
+  .badge.countered{background:rgba(255,201,60,0.15); color:var(--gold);}
+  .selected-creator{display:flex; align-items:center; justify-content:space-between; background:var(--ink); border:1px solid var(--gold); border-radius:10px; padding:12px 14px; margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<div id="loadingGate">Loading…</div>
+<div id="authGate" style="display:none;">You're not logged in. <a href="signup.html?mode=login">Log in</a>.</div>
+
+<main>
+  <div class="wrap">
+    <header>
+      <a href="landing.html" class="logo"><span class="logo-mark">L</span>The Lab</a>
+      <button class="link-btn" onclick="logout()">Log out</button>
+    </header>
+
+    <h1 id="brandGreeting">Send an offer</h1>
+    <p class="subtext">Find a creator by their username and send them a direct proposal — no back-and-forth over DMs.</p>
+
+    <div class="card">
+      <h2>Find a creator</h2>
+      <input type="text" class="field" id="searchInput" placeholder="Search by username" oninput="onSearchInput()">
+      <div id="searchResults"></div>
+    </div>
+
+    <div class="card" id="offerFormCard" style="display:none;">
+      <h2>Send an offer</h2>
+      <div class="selected-creator">
+        <div><b id="selectedCreatorName"></b><span style="font-size:12px; color:var(--dim);">@<span id="selectedCreatorUsername"></span></span></div>
+        <button class="btn-ghost btn btn-sm" onclick="clearSelectedCreator()">Change</button>
+      </div>
+      <input type="text" class="field" id="brandNameInput" placeholder="Your brand/company name">
+      <input type="text" class="field" id="budgetInput" placeholder="Budget (e.g. $500 or 'Product + $200')">
+      <textarea class="field" id="messageInput" placeholder="What's the offer? Include what you need, timeline, deliverables — whatever helps them say yes."></textarea>
+      <button class="btn btn-full" onclick="sendOffer()">Send offer</button>
+      <p class="empty" id="offerStatusMsg"></p>
+    </div>
+
+    <div class="card">
+      <h2>Offers you've sent</h2>
+      <div id="sentOffersBody"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  let currentUser = null;
+  let profile = null;
+  let selectedCreator = null;
+  let searchTimer = null;
+
+  function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  async function logout(){ await supabaseClient.auth.signOut(); window.location.href = 'landing.html'; }
+
+  function onSearchInput(){
+    clearTimeout(searchTimer);
+    const q = document.getElementById('searchInput').value.trim();
+    if(q.length < 2){ document.getElementById('searchResults').innerHTML = ''; return; }
+    searchTimer = setTimeout(() => runSearch(q), 350);
+  }
+
+  async function runSearch(q){
+    const { data, error } = await supabaseClient
+      .from('profiles_public')
+      .select('id, username, display_name, niche')
+      .ilike('username', `%${q}%`)
+      .limit(8);
+
+    const box = document.getElementById('searchResults');
+    if(error){ box.innerHTML = '<div class="empty">Search failed — try again.</div>'; return; }
+    if(!data || data.length === 0){ box.innerHTML = '<div class="empty">No creators found.</div>'; return; }
+
+    box.innerHTML = data.map(c => `
+      <div class="result-row">
+        <div><b>${esc(c.display_name || c.username)}</b><span>@${esc(c.username)}${c.niche ? ' · ' + esc(c.niche) : ''}</span></div>
+        <button class="btn btn-sm" onclick='selectCreator(${JSON.stringify(c).replace(/'/g, "&#39;")})'>Select</button>
+      </div>
+    `).join('');
+  }
+
+  function selectCreator(c){
+    selectedCreator = c;
+    document.getElementById('selectedCreatorName').textContent = c.display_name || c.username;
+    document.getElementById('selectedCreatorUsername').textContent = c.username;
+    document.getElementById('offerFormCard').style.display = 'block';
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('offerFormCard').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function clearSelectedCreator(){
+    selectedCreator = null;
+    document.getElementById('offerFormCard').style.display = 'none';
+  }
+
+  async function sendOffer(){
+    if(!selectedCreator){ alert('Pick a creator first.'); return; }
+    const brandName = document.getElementById('brandNameInput').value.trim();
+    const budget = document.getElementById('budgetInput').value.trim();
+    const message = document.getElementById('messageInput').value.trim();
+    if(!brandName){ alert('Add your brand/company name.'); return; }
+    if(!message){ alert("Add a message so they know what you're offering."); return; }
+
+    const { error } = await supabaseClient.from('deal_offers').insert({
+      brand_id: currentUser.id,
+      creator_id: selectedCreator.id,
+      brand_name: brandName,
+      message,
+      budget,
+    });
+
+    const statusEl = document.getElementById('offerStatusMsg');
+    if(error){
+      statusEl.textContent = error.message.includes('row-level') || error.message.includes('policy')
+        ? "Your account isn't approved as a Brand account yet — contact The Lab to get that set up."
+        : 'Could not send — try again.';
+      return;
+    }
+
+    statusEl.textContent = `Sent to @${selectedCreator.username}. They'll be notified right away.`;
+    document.getElementById('budgetInput').value = '';
+    document.getElementById('messageInput').value = '';
+    clearSelectedCreator();
+    loadSentOffers();
+  }
+
+  async function loadSentOffers(){
+    const body = document.getElementById('sentOffersBody');
+    const { data, error } = await supabaseClient
+      .from('deal_offers')
+      .select('*, profiles!deal_offers_creator_id_fkey(username, display_name)')
+      .eq('brand_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if(error){ body.innerHTML = '<div class="empty">Could not load your offers.</div>'; return; }
+    if(!data || data.length === 0){ body.innerHTML = '<div class="empty">No offers sent yet.</div>'; return; }
+
+    body.innerHTML = data.map(o => `
+      <div class="offer-card">
+        <b>@${esc(o.profiles?.username || 'creator')}</b>
+        <div class="meta">${o.budget ? esc(o.budget) : 'No budget listed'} · <span class="badge ${o.status}">${esc(o.status)}</span></div>
+        <p style="font-size:12.5px; color:var(--dim);">${esc(o.message || '')}</p>
+        ${o.status === 'countered' ? `
+          <div style="background:var(--ink-2); border:1px solid var(--gold); border-radius:8px; padding:10px; margin-top:8px;">
+            <div style="font-size:11.5px; color:var(--gold); margin-bottom:4px;">They asked for:</div>
+            <div style="font-size:13px;">${o.counter_budget ? esc(o.counter_budget) : ''}${o.counter_message ? (o.counter_budget ? ' — ' : '') + esc(o.counter_message) : ''}</div>
+            <button class="btn btn-sm" style="margin-top:8px;" onclick='selectCreator(${JSON.stringify({ id: o.creator_id, username: o.profiles?.username, display_name: o.profiles?.display_name }).replace(/'/g, "&#39;")}); document.getElementById("budgetInput").value = ${JSON.stringify(o.counter_budget || '')}; document.getElementById("messageInput").value = ${JSON.stringify(o.counter_message ? 'Following up on your request: ' + o.counter_message : '')};'>Send an improved offer</button>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  }
+
+  (async () => {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if(!sessionData.session){
+      document.getElementById('loadingGate').style.display = 'none';
+      document.getElementById('authGate').style.display = 'block';
+      return;
+    }
+    currentUser = sessionData.session.user;
+
+    const { data: profileRow, error: profileErr } = await supabaseClient
+      .from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+
+    if(profileErr || !profileRow){
+      document.getElementById('loadingGate').style.display = 'none';
+      document.getElementById('authGate').style.display = 'block';
+      return;
+    }
+
+    profile = profileRow;
+    if(profile.role !== 'brand'){
+      // Not a brand account — this page doesn't apply to them.
+      window.location.href = 'dashboard.html';
+      return;
+    }
+
+    document.getElementById('brandGreeting').textContent = profile.display_name ? `Welcome, ${profile.display_name}` : 'Send an offer';
+    document.getElementById('brandNameInput').value = profile.display_name || '';
+
+    document.getElementById('loadingGate').style.display = 'none';
+    document.querySelector('main').style.display = 'block';
+    loadSentOffers();
+  })();
+</script>
+</body>
+</html>

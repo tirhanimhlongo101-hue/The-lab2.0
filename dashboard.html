@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lab dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --ink:#181512; --ink-2:#211D18; --ink-3:#2A241D; --paper:#F8F4EC;
+    --gold:#FFC93C; --line:rgba(248,244,236,0.14); --dim:rgba(248,244,236,0.6);
+    --stamp:#E4634F; --signal:#3FA679;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--ink); color:var(--paper); font-family:'IBM Plex Sans', sans-serif; min-height:100vh; -webkit-font-smoothing:antialiased; padding-bottom:76px;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .wrap{max-width:640px; margin:0 auto; padding:0 20px;}
+
+  header{display:flex; align-items:center; justify-content:space-between; padding:18px 0;}
+  .logo{display:flex; align-items:center; gap:8px; font-family:'Fraunces',serif; font-weight:800; font-size:18px;}
+  .logo-mark{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; background:var(--gold); border-radius:7px; color:var(--ink); font-family:'Fraunces',serif; font-weight:800;}
+  .link-btn{background:none; border:none; color:var(--dim); font-size:13px; cursor:pointer;}
+
+  #loadingGate, #authGate{text-align:center; padding:100px 24px; color:var(--dim);}
+  #authGate a{color:var(--gold);}
+  main{display:none;}
+
+  .view{display:none;}
+  .view.active{display:block; animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0;} to{opacity:1;}}
+
+  h1{font-family:'Fraunces',serif; font-weight:800; font-size:23px; margin-bottom:4px;}
+  h2{font-family:'Fraunces',serif; font-weight:700; font-size:16px; margin-bottom:12px;}
+  .subtext{color:var(--dim); font-size:13.5px; margin-bottom:20px;}
+
+  .card{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:16px;}
+  .field{width:100%; background:var(--ink); border:1px solid var(--line); border-radius:10px; padding:12px 14px; color:var(--paper); font-size:14px; margin-bottom:12px; outline:none;}
+  .field:focus{border-color:var(--gold);}
+  textarea.field{resize:none; height:74px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  .btn{padding:11px 18px; border-radius:9px; font-size:13.5px; font-weight:600; border:none; cursor:pointer; background:#FFFFFF; color:var(--ink);}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--paper);}
+  .btn-sm{padding:8px 13px; font-size:12.5px; border-radius:7px;}
+  .btn-full{width:100%;}
+  .empty{color:var(--dim); font-size:13px; padding:6px 0;}
+
+  .site-preview-card{background:linear-gradient(155deg, var(--ink-3), var(--ink-2)); border:1px solid var(--line); border-radius:16px; padding:18px; margin-bottom:18px; display:flex; gap:16px; align-items:center;}
+  .site-preview-thumb{width:74px; height:94px; border-radius:10px; background:var(--ink); overflow:hidden; flex-shrink:0; position:relative; border:1px solid var(--line);}
+  .site-preview-thumb iframe{width:390px; height:844px; border:none; transform:scale(0.19); transform-origin:top left; pointer-events:none;}
+  .site-preview-info{flex:1; min-width:0;}
+  .site-preview-info b{font-family:'Fraunces',serif; font-size:16px; display:block; margin-bottom:3px;}
+  .site-preview-info span{font-size:12.5px; color:var(--dim); display:block; margin-bottom:10px; word-break:break-all;}
+  .site-preview-actions{display:flex; gap:8px;}
+
+  .stat-row{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:18px;}
+  .stat{background:var(--ink-2); border:1px solid var(--line); border-radius:12px; padding:14px;}
+  .stat-num{font-family:'Fraunces',serif; font-weight:800; font-size:20px;}
+  .stat-label{font-size:11px; color:var(--dim); margin-top:2px;}
+
+  .quick-row{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px;}
+  .quick-btn{background:var(--ink-2); border:1px solid var(--line); border-radius:12px; padding:14px 10px; text-align:center; cursor:pointer;}
+  .quick-btn div:first-child{font-size:20px; margin-bottom:6px;}
+  .quick-btn span{font-size:11.5px; color:var(--dim);}
+
+  #ringFab{position:fixed; left:16px; bottom:78px; width:56px; height:56px; z-index:35; cursor:pointer;}
+  #ringFab svg{transform:rotate(-90deg);}
+  #ringFabLabel{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:11.5px; background:var(--ink-2); border-radius:50%; margin:5px;}
+
+  .tabbar{position:fixed; bottom:0; left:0; right:0; background:var(--ink-2); border-top:1px solid var(--line); display:flex; z-index:30;}
+  .tabbtn{flex:1; background:none; border:none; color:var(--dim); padding:10px 4px 12px; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;}
+  .tabbtn.active{color:var(--gold);}
+  .tabbtn .ic{font-size:18px;}
+  .tabbtn .lbl{font-size:10.5px;}
+
+  .list-row{background:var(--ink-2); border:1px solid var(--line); border-radius:12px; margin-bottom:10px; overflow:hidden;}
+  .list-row-head{display:flex; align-items:center; gap:12px; padding:16px; cursor:pointer;}
+  .list-row-head .ic{width:38px; height:38px; border-radius:10px; background:var(--ink); display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;}
+  .list-row-head .txt{flex:1;}
+  .list-row-head .txt b{font-family:'Fraunces',serif; font-size:14.5px; display:block;}
+  .list-row-head .txt span{font-size:12px; color:var(--dim);}
+  .list-row-head .chev{color:var(--dim); transition:transform .2s; flex-shrink:0;}
+  .list-row.open .chev{transform:rotate(90deg);}
+  .list-row-body{display:none; padding:0 16px 18px;}
+  .list-row.open .list-row-body{display:block;}
+
+  .item-card{background:var(--ink); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:10px;}
+  .item-card .remove-btn{background:none; border:1px solid var(--line); color:var(--dim); cursor:pointer; font-size:11.5px; padding:5px 10px; border-radius:7px;}
+
+  .flag-result{margin-top:12px; padding:13px; border-radius:10px; font-size:13.5px; display:none;}
+  .flag-result.clean{background:rgba(63,166,121,0.12); border:1px solid rgba(63,166,121,0.4); display:block;}
+  .flag-result.dirty{background:rgba(228,99,79,0.12); border:1px solid rgba(228,99,79,0.4); display:block;}
+  .flag-result ul{margin:7px 0 0 18px;}
+  .deal{border-top:1px solid var(--line); padding:13px 0; display:flex; justify-content:space-between; gap:12px; align-items:flex-start;}
+  .deal:first-child{border-top:none;}
+  .deal b{font-family:'Fraunces',serif; font-size:14.5px;}
+  .deal .meta{font-size:11.5px; color:var(--dim); margin-top:3px;}
+  .deal-actions{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
+  .badge{font-size:10px; padding:4px 8px; border-radius:20px; white-space:nowrap; font-family:'IBM Plex Mono',monospace;}
+  .badge.clean{background:rgba(63,166,121,0.15); color:var(--signal);}
+  .badge.dirty{background:rgba(228,99,79,0.15); color:var(--stamp);}
+  .tiny-btn{background:none; border:1px solid var(--line); color:var(--dim); font-size:10px; padding:4px 7px; border-radius:6px; cursor:pointer;}
+
+  .tag-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .tag{display:flex; align-items:center; gap:6px; background:var(--ink); border:1px solid var(--line); border-radius:20px; padding:6px 8px 6px 14px; font-size:12px;}
+  .tag button{background:none; border:none; color:var(--dim); cursor:pointer; font-size:14px; line-height:1;}
+  .tag-input-row{display:flex; gap:8px;}
+  .tag-input-row .field{margin-bottom:0;}
+
+  .pref-chip{display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:20px; padding:8px 14px; font-size:12.5px; background:var(--ink); color:var(--dim); cursor:pointer; margin:0 6px 8px 0;}
+  .pref-chip.selected{border-color:var(--gold); color:var(--gold); background:rgba(255,201,60,0.08);}
+  .match-badge{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--signal); background:rgba(63,166,121,0.13); border:1px solid rgba(63,166,121,0.35); padding:3px 9px; border-radius:20px; margin-bottom:8px;}
+
+  .opp-card{border:1px solid var(--line); border-radius:12px; padding:15px; margin-bottom:10px; background:var(--ink);}
+  .opp-card b{font-family:'Fraunces',serif; font-size:14.5px; display:block; margin-bottom:3px;}
+  .opp-card .meta{font-size:11.5px; color:var(--dim); margin-bottom:8px;}
+  .opp-card p{font-size:12.5px; color:var(--dim); line-height:1.5; margin-bottom:10px;}
+  .opp-card button{width:100%;}
+  .opp-card button.interested{background:rgba(63,166,121,0.15); color:var(--signal); border:1px solid rgba(63,166,121,0.4);}
+
+  .chart-card{margin-bottom:16px;}
+  .line-chart{width:100%; height:110px;}
+  .bar-chart-row{display:flex; align-items:flex-end; gap:14px; height:120px; padding-top:10px;}
+  .bar-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .bar-col .bar{width:100%; max-width:36px; background:linear-gradient(180deg, var(--gold), rgba(255,201,60,0.4)); border-radius:6px 6px 0 0; min-height:3px;}
+  .bar-col .bar-label{font-size:10.5px; color:var(--dim); margin-top:6px; text-align:center;}
+  .bar-col .bar-value{font-size:11px; color:var(--paper); margin-bottom:4px; font-family:'IBM Plex Mono',monospace;}
+  .donut-row{display:flex; align-items:center; gap:20px;}
+  .donut{width:96px; height:96px; border-radius:50%; flex-shrink:0;}
+  .donut-legend div{display:flex; align-items:center; gap:8px; font-size:12.5px; margin-bottom:6px;}
+  .dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+
+  @media(max-width:480px){
+    .quick-row{grid-template-columns:1fr 1fr;}
+    .stat-row{grid-template-columns:1fr 1fr;}
+  }
+  .locked-body{padding:20px 16px; text-align:center;}
+  .locked-body .lock-ic{font-size:22px; margin-bottom:8px;}
+  .locked-body p{color:var(--dim); font-size:13px; margin-bottom:14px; line-height:1.5;}
+  .plan-badge{display:inline-flex; align-items:center; gap:6px; background:var(--ink-2); border:1px solid var(--line); border-radius:20px; padding:6px 14px; font-size:12px; font-weight:600; margin-bottom:14px;}
+  .plan-badge.pro{color:var(--gold); border-color:rgba(255,201,60,0.4);}
+  .plan-badge.studio{color:#C48FF0; border-color:rgba(196,143,240,0.4);}
+  .notif-bell{position:relative; background:none; border:1px solid var(--line); color:var(--paper); width:38px; height:38px; border-radius:10px; cursor:pointer; font-size:16px;}
+  .notif-dot{position:absolute; top:-3px; right:-3px; width:10px; height:10px; border-radius:50%; background:var(--stamp); border:2px solid var(--ink); display:none;}
+  .notif-item{border-top:1px solid var(--line); padding:12px 0; font-size:13px;}
+  .notif-item:first-child{border-top:none;}
+  .notif-item b{display:block; font-family:'Fraunces',serif; font-size:13.5px; margin-bottom:2px;}
+  .notif-item span{color:var(--dim); font-size:12px;}
+  .notif-item.unread{background:rgba(255,201,60,0.05); margin:0 -16px; padding:12px 16px;}
+  .partner-card{border:1px solid var(--line); border-radius:12px; padding:15px; margin-bottom:10px; background:var(--ink);}
+  .partner-card b{font-family:'Fraunces',serif; font-size:14.5px; display:block; margin-bottom:3px;}
+  .partner-card .terms-note{font-size:11.5px; color:var(--dim); background:var(--ink-2); border-radius:8px; padding:8px 10px; margin:8px 0;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="logo-mark">L</span>The Lab</div>
+    <div class="header-actions" style="display:flex; align-items:center; gap:10px;">
+      <button class="notif-bell" onclick="toggleNotifPanel()">🔔<span class="notif-dot" id="notifDot"></span></button>
+      <a href="admin.html" class="link-btn" id="adminLink" style="display:none; text-decoration:none;">Admin</a>
+      <button class="link-btn" onclick="logout()">Log out</button>
+    </div>
+  </header>
+
+  <div class="card" id="notifPanel" style="display:none; max-width:640px; margin:0 auto 16px;">
+    <h2>Notifications</h2>
+    <div id="notifList"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div id="loadingGate">Loading your dashboard…</div>
+  <div id="authGate" style="display:none;">
+    You're not logged in. <a href="signup.html?mode=login">Log in</a> or <a href="onboarding.html">build your website</a>.
+  </div>
+
+  <main id="main">
+
+    <div class="view active" data-view="home">
+      <h1 id="greeting">—</h1>
+      <p class="subtext">Your creator business, in one place.</p>
+      <div id="planBadgeWrap"></div>
+
+      <div class="site-preview-card">
+        <div class="site-preview-thumb"><iframe id="homePreviewFrame"></iframe></div>
+        <div class="site-preview-info">
+          <b id="homeSiteName">—</b>
+          <span id="homeSiteLink" class="mono"></span>
+          <div class="site-preview-actions">
+            <button class="btn btn-sm" onclick="window.open('editor.html?u='+encodeURIComponent(profile.username),'_blank')">Edit</button>
+            <button class="btn btn-ghost btn-sm" onclick="openPortfolio()">View</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num" id="statDeals">0</div><div class="stat-label">Deals</div></div>
+        <div class="stat"><div class="stat-num" id="statFlagged">0</div><div class="stat-label">Flagged</div></div>
+        <div class="stat"><div class="stat-num" id="statPayout">$0</div><div class="stat-label">Tracked</div></div>
+      </div>
+
+      <div class="quick-row">
+        <div class="quick-btn" onclick="window.open('editor.html?u='+encodeURIComponent(profile.username),'_blank')"><div>🎨</div><span>Edit site</span></div>
+        <div class="quick-btn" onclick="switchView('deals')"><div>🤝</div><span>Log a deal</span></div>
+        <div class="quick-btn" onclick="copyLink()"><div>🔗</div><span>Copy link</span></div>
+      </div>
+    </div>
+
+    <div class="view" data-view="site">
+      <h1>My Website</h1>
+      <p class="subtext">The visual editor is where you build the page itself. Manage the content that feeds it below.</p>
+
+      <div class="card" style="display:flex; align-items:center; justify-content:space-between; gap:14px;">
+        <div>
+          <b style="font-family:'Fraunces',serif; font-size:15px; display:block; margin-bottom:3px;">Open the visual editor</b>
+          <span class="subtext" style="margin:0;">Click-to-edit headlines, drag sections, change colors.</span>
+        </div>
+        <button class="btn" onclick="window.open('editor.html?u='+encodeURIComponent(profile.username),'_blank')">Open →</button>
+      </div>
+
+      <div class="list-row" id="rowContent">
+        <div class="list-row-head" onclick="toggleRow('rowContent')">
+          <div class="ic">🎬</div>
+          <div class="txt"><b>Featured Work</b><span>Content shown in your Featured Work section</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <div id="workItems"></div>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addWorkItem()">+ Add featured work</button>
+          <button class="btn btn-sm" style="margin-left:8px;" onclick="saveContent()">Save</button>
+        </div>
+      </div>
+
+      <div class="list-row" id="rowShop">
+        <div class="list-row-head" onclick="toggleRow('rowShop')">
+          <div class="ic">🛍️</div>
+          <div class="txt"><b>Shop</b><span>Products shown in your Shop section</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <div id="shopItems"></div>
+          <button class="btn btn-ghost btn-sm" type="button" onclick="addShopItem()">+ Add product</button>
+          <button class="btn btn-sm" style="margin-left:8px;" onclick="saveShop()">Save</button>
+        </div>
+      </div>
+
+      <template id="workItemTemplate">
+        <div class="item-card">
+          <div class="row2">
+            <input type="text" class="field item-title" placeholder="Title">
+            <input type="text" class="field item-subtitle" placeholder="Subtitle">
+          </div>
+          <div class="row2">
+            <input type="text" class="field item-image" placeholder="Image URL (optional)">
+            <input type="color" class="field item-color" value="#2A241D" style="padding:4px; height:44px;">
+          </div>
+          <button type="button" class="remove-btn" onclick="this.closest('.item-card').remove()">Remove</button>
+        </div>
+      </template>
+      <template id="shopItemTemplate">
+        <div class="item-card">
+          <div class="row2">
+            <input type="text" class="field item-name" placeholder="Product name">
+            <input type="text" class="field item-price" placeholder="Price, e.g. 29 or $29">
+          </div>
+          <select class="field item-type">
+            <option value="own">Your product</option>
+            <option value="affiliate">Affiliate link</option>
+          </select>
+          <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin-top:10px;">
+            <input type="checkbox" class="item-sell-lab" onchange="onSellOnLabToggle(this)" style="width:auto;">
+            Sell through The Lab (we handle checkout, pay you instantly minus our 2% — needs Stripe connected in Payouts)
+          </label>
+          <div class="lab-sale-fields" style="display:none; margin-top:8px;">
+            <select class="field item-kind" onchange="onKindChange(this)">
+              <option value="digital">Digital (PDF upload or a link)</option>
+              <option value="physical">Physical (we collect their shipping address for you)</option>
+            </select>
+            <div class="digital-delivery-fields" style="margin-top:8px;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <input type="file" class="item-delivery-file-input" accept="application/pdf" onchange="uploadDigitalFile(this)" style="display:none;">
+                <button type="button" class="btn btn-sm" onclick="this.nextElementSibling.click()">Upload PDF</button>
+                <span class="item-delivery-file-status" style="font-size:12px; color:var(--dim);"></span>
+              </div>
+              <input type="text" class="field item-delivery" placeholder="…or paste a link instead (used only if no PDF is uploaded)" style="margin-top:8px;">
+            </div>
+          </div>
+          <div class="row2" style="margin-top:8px;">
+            <input type="text" class="field item-url" placeholder="External link (only used if NOT sold through The Lab)">
+            <input type="text" class="field item-image" placeholder="Image URL (optional)">
+          </div>
+          <input type="color" class="field item-color" value="#2A241D" style="padding:4px; height:44px; width:100%; margin-top:8px;">
+          <button type="button" class="remove-btn" onclick="this.closest('.item-card').remove()">Remove</button>
+        </div>
+      </template>
+    </div>
+
+    <div class="view" data-view="deals">
+      <h1>Deals & Partnerships</h1>
+      <p class="subtext">Track, flag, and manage every brand relationship.</p>
+
+      <div class="list-row open" id="rowCheck">
+        <div class="list-row-head" onclick="toggleRow('rowCheck')">
+          <div class="ic">🚩</div>
+          <div class="txt"><b>Check a deal for red flags</b><span>Paste terms before you sign</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <textarea class="field" id="checkText" placeholder="Paste the brand's deal terms — payment, usage rights, exclusivity, deliverables…"></textarea>
+          <div class="row2" style="margin-top:8px;">
+            <input type="text" class="field" id="checkBrand" placeholder="Brand name (optional)">
+            <input type="number" class="field" id="checkAmount" placeholder="Amount offered, $ (optional)">
+          </div>
+          <button class="btn btn-ghost" onclick="runCheck()" id="checkBtn" style="margin-top:8px;">Check for red flags</button>
+          <div class="flag-result" id="checkResult"></div>
+        </div>
+      </div>
+
+      <div class="list-row open" id="rowLog">
+        <div class="list-row-head" onclick="toggleRow('rowLog')">
+          <div class="ic">📝</div>
+          <div class="txt"><b>Log a deal</b><span>Add it to your tracker</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <input type="text" class="field" id="dealBrand" placeholder="Brand name">
+          <div class="row2">
+            <input type="number" class="field" id="dealAmount" placeholder="Payment amount (0 if unspecified)">
+            <select class="field" id="dealPlatform"><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Other</option></select>
+          </div>
+          <textarea class="field" id="dealTerms" placeholder="Deliverables, usage rights, exclusivity"></textarea>
+          <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--dim); margin-bottom:14px;">
+            <input type="checkbox" id="dealPublic" checked> Show publicly on my website
+          </label>
+          <button class="btn" onclick="addDeal()">Add deal</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Your deals</h2>
+        <div id="dealsList"><div class="empty">No deals logged yet.</div></div>
+      </div>
+
+      <div class="list-row" id="rowManual">
+        <div class="list-row-head" onclick="toggleRow('rowManual')">
+          <div class="ic">🏷️</div>
+          <div class="txt"><b>Other partnerships</b><span>Brands not tied to a logged deal</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <div class="tag-row" id="manualPartnerTags"></div>
+          <div class="tag-input-row">
+            <input type="text" class="field" id="manualPartnerInput" placeholder="Brand name" onkeydown="if(event.key==='Enter'){event.preventDefault(); addManualPartner();}">
+            <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="addManualPartner()">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-row" id="rowMatch">
+        <div class="list-row-head" onclick="toggleRow('rowMatch')">
+          <div class="ic">🎯</div>
+          <div class="txt"><b>What I'm looking for</b><span>So opportunities can be matched to you</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <p class="subtext" style="margin-bottom:10px;">This isn't sent anywhere yet — it just powers the "matches you" flag on opportunities below, until real brand matching exists.</p>
+          <h2 style="font-size:13px;">Categories you want</h2>
+          <div id="matchCategories" style="margin-bottom:6px;"></div>
+          <div class="row2">
+            <input type="text" class="field" id="matchMinRate" placeholder="Minimum rate (e.g. $300 or 'product only')">
+            <select class="field" id="matchAvailability">
+              <option value="open">Open to offers</option>
+              <option value="selective">Selective — right fit only</option>
+              <option value="closed">Not taking new deals</option>
+            </select>
+          </div>
+          <h2 style="font-size:13px;">Deal types you'll do</h2>
+          <div class="tag-row" id="dealTypeTags"></div>
+          <div class="tag-input-row" style="margin-bottom:12px;">
+            <input type="text" class="field" id="dealTypeInput" placeholder="e.g. UGC, Ambassadorship" onkeydown="if(event.key==='Enter'){event.preventDefault(); addDealType();}">
+            <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="addDealType()">Add</button>
+          </div>
+          <textarea class="field" id="matchNotes" placeholder="Anything else brands should know — dream brands, dealbreakers, etc."></textarea>
+          <button class="btn btn-sm" onclick="saveMatchProfile()">Save</button>
+        </div>
+      </div>
+
+      <div class="list-row open" id="rowOffers">
+        <div class="list-row-head" onclick="toggleRow('rowOffers')">
+          <div class="ic">📩</div>
+          <div class="txt"><b>Offers</b><span>Direct proposals from brands</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body" id="offersBody">
+          <div class="empty">Loading offers…</div>
+        </div>
+      </div>
+
+      <div class="list-row" id="rowOpps">
+        <div class="list-row-head" onclick="toggleRow('rowOpps')">
+          <div class="ic">✨</div>
+          <div class="txt"><b>Brand opportunities</b><span>Open calls you can express interest in</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body" id="oppsBody">
+          <div class="empty">Loading opportunities…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" data-view="insights">
+      <h1>Insights</h1>
+      <p class="subtext">Numbers pulled from what you've logged on The Lab — not a live social media connection.</p>
+
+      <div class="card">
+        <h2>Audience (as shown on your site)</h2>
+        <div class="row3">
+          <input type="text" class="field" id="statFollowers" placeholder="Followers (e.g. 250K+)">
+          <input type="text" class="field" id="statViews" placeholder="Total views (e.g. 100M+)">
+          <input type="text" class="field" id="statYears" placeholder="Years creating (e.g. 5+)">
+        </div>
+        <button class="btn btn-sm" onclick="saveAudienceStats()">Save</button>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Tracked deal value over time</h2>
+        <div id="lineChartWrap"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Deals by platform</h2>
+        <div class="bar-chart-row" id="platformChart"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Clean vs. flagged</h2>
+        <div class="donut-row">
+          <div class="donut" id="flagDonut"></div>
+          <div class="donut-legend" id="flagLegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" data-view="more">
+      <h1>More</h1>
+
+      <div class="list-row" id="rowPartners">
+        <div class="list-row-head" onclick="toggleRow('rowPartners')">
+          <div class="ic">🎁</div>
+          <div class="txt"><b>Partner Products</b><span>Products The Lab has offered you to feature</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body" id="partnersBody"></div>
+      </div>
+
+      <div class="list-row" id="rowMediaKit">
+        <div class="list-row-head" onclick="toggleRow('rowMediaKit')">
+          <div class="ic">📇</div>
+          <div class="txt"><b>Media Kit</b><span>A shareable one-pager for brands</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <textarea class="field" id="kitIntro" placeholder="Short third-person intro for brands"></textarea>
+          <h2 style="font-size:13px; margin-top:6px;">Services you offer</h2>
+          <div class="tag-row" id="serviceTags"></div>
+          <div class="tag-input-row" style="margin-bottom:12px;">
+            <input type="text" class="field" id="serviceInput" placeholder="e.g. Sponsored posts" onkeydown="if(event.key==='Enter'){event.preventDefault(); addService();}">
+            <button class="btn btn-ghost btn-sm" style="flex-shrink:0;" onclick="addService()">Add</button>
+          </div>
+          <button class="btn btn-sm" onclick="saveMediaKit()">Save</button>
+          <button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="openMediaKit()">Open →</button>
+        </div>
+      </div>
+
+      <div class="list-row" id="rowReferral">
+        <div class="list-row-head" onclick="toggleRow('rowReferral')">
+          <div class="ic">🎁</div>
+          <div class="txt"><b>Refer &amp; earn</b><span>$15 per paying signup</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <p class="subtext" style="margin-top:0;">Share your link. The first time someone you refer becomes a paying Pro or Studio subscriber, you get $15 — paid to whichever payout method you've connected above.</p>
+          <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <input type="text" class="field" id="referralLinkField" readonly style="font-size:12.5px;">
+            <button class="btn btn-sm" onclick="copyReferralLink()">Copy</button>
+          </div>
+          <div id="referralCommissionsList"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="list-row" id="rowPayouts">
+        <div class="list-row-head" onclick="toggleRow('rowPayouts')">
+          <div class="ic">💸</div>
+          <div class="txt"><b>Payouts</b><span>Where The Lab sends you money</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <p class="subtext" style="margin-top:0;">Connect one or both — payouts for partner-product drops and brand deals processed through The Lab go here.</p>
+          <div id="stripeConnectStatus" style="margin-bottom:14px;"></div>
+          <h2 style="font-size:13px;">PayPal</h2>
+          <input type="text" class="field" id="paypalEmailInput" placeholder="Your PayPal email">
+          <button class="btn btn-sm" onclick="savePaypalEmail()">Save PayPal email</button>
+          <p class="subtext" id="paypalSavedNote" style="margin-top:6px;"></p>
+        </div>
+      </div>
+
+      <div class="list-row" id="rowSettings">
+        <div class="list-row-head" onclick="toggleRow('rowSettings')">
+          <div class="ic">⚙️</div>
+          <div class="txt"><b>Settings</b><span>Profile, socials, account</span></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="list-row-body">
+          <input type="text" class="field" id="editName" placeholder="Display name">
+          <textarea class="field" id="editBio" placeholder="Short bio"></textarea>
+          <input type="text" class="field" id="editAvatarImage" placeholder="Avatar photo URL (optional)">
+          <h2 style="font-size:13px;">Connect links</h2>
+          <input type="text" class="field" id="socialInstagram" placeholder="Instagram URL">
+          <input type="text" class="field" id="socialTiktok" placeholder="TikTok URL">
+          <input type="text" class="field" id="socialYoutube" placeholder="YouTube URL">
+          <input type="text" class="field" id="socialTwitter" placeholder="X / Twitter URL">
+          <input type="text" class="field" id="socialEmail" placeholder="Contact email">
+          <button class="btn btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="subtext" style="margin-bottom:4px;">Signed in as <span class="mono" id="accountEmail"></span></p>
+        <p class="subtext">Your link: <span class="mono" id="accountUsername"></span></p>
+        <button class="btn btn-ghost btn-full" onclick="logout()">Log out</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div id="ringFab" onclick="switchView('home')" style="display:none;">
+  <svg width="56" height="56">
+    <circle cx="28" cy="28" r="24" stroke="rgba(248,244,236,0.14)" stroke-width="5" fill="none"/>
+    <circle id="ringProgress" cx="28" cy="28" r="24" stroke="#FFC93C" stroke-width="5" fill="none" stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="round"/>
+  </svg>
+  <div id="ringFabLabel">0%</div>
+</div>
+
+<div class="tabbar" id="tabbar" style="display:none;">
+  <button class="tabbtn active" data-view="home" onclick="switchView('home')"><span class="ic">🏠</span><span class="lbl">Home</span></button>
+  <button class="tabbtn" data-view="site" onclick="switchView('site')"><span class="ic">🎨</span><span class="lbl">Site</span></button>
+  <button class="tabbtn" data-view="deals" onclick="switchView('deals')"><span class="ic">🤝</span><span class="lbl">Deals</span></button>
+  <button class="tabbtn" data-view="insights" onclick="switchView('insights')"><span class="ic">📊</span><span class="lbl">Insights</span></button>
+  <button class="tabbtn" data-view="more" onclick="switchView('more')"><span class="ic">☰</span><span class="lbl">More</span></button>
+</div>
+
+<script>
+  let profile = null;
+  let deals = [];
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function safeUrl(u){
+    if(!u) return '';
+    try{
+      const parsed = new URL(String(u), window.location.href);
+      if(['http:','https:','mailto:'].includes(parsed.protocol)) return parsed.href;
+    } catch(e){}
+    return '';
+  }
+
+  function switchView(view){
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
+    document.querySelectorAll('.tabbtn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    window.scrollTo({top:0, behavior:'smooth'});
+    if(view === 'insights') renderCharts();
+  }
+  function toggleRow(id){ document.getElementById(id).classList.toggle('open'); }
+
+  function analyzeTerms(text, amount){
+    const flags = [];
+    const t = (text || '').toLowerCase();
+    if(!amount || Number(amount) <= 0) flags.push('No payment amount specified');
+    if(/unlimited/.test(t) && /(usage|rights|use)/.test(t)) flags.push('Unlimited usage rights');
+    if(/forever|in perpetuity/.test(t)) flags.push('Usage rights with no end date');
+    if(!/exclusiv/.test(t)) flags.push('No exclusivity limit mentioned');
+    const hasNumbers = /\d/.test(t);
+    if(t.trim().length < 25 || !hasNumbers) flags.push('Vague or uncounted deliverables');
+    return flags;
+  }
+
+  async function runCheck(){
+    const text = document.getElementById('checkText').value.trim();
+    const amount = document.getElementById('checkAmount').value;
+    const brandName = document.getElementById('checkBrand').value.trim();
+    const box = document.getElementById('checkResult');
+    const btn = document.getElementById('checkBtn');
+
+    if(!text || text.length < 10){
+      box.className = 'flag-result';
+      box.innerHTML = 'Paste the actual terms first — a sentence or two is too little to review.';
+      return;
+    }
+
+    btn.disabled = true;
+    box.className = 'flag-result';
+    box.innerHTML = 'Reading through the terms…';
+
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch('/api/analyze-deal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ terms: text, amount, brandName }),
+      });
+      const json = await res.json();
+
+      if(!res.ok){
+        // Fall back to the instant, free local checklist rather than leave
+        // the creator with nothing — e.g. if they're on Free, over their
+        // daily cap, or the AI service is briefly down.
+        runLocalCheckFallback(text, json.error);
+        return;
+      }
+
+      renderCheckResult(json);
+    } catch(e){
+      runLocalCheckFallback(text, 'Could not reach the AI checker — showing a basic check instead.');
+    }
+    btn.disabled = false;
+  }
+
+  function renderCheckResult(result){
+    const box = document.getElementById('checkResult');
+    const btn = document.getElementById('checkBtn');
+    btn.disabled = false;
+
+    if(result.verdict === 'fair' && (!result.flags || result.flags.length === 0)){
+      box.className = 'flag-result clean';
+      box.innerHTML = '<b>Looks reasonably fair.</b> No major red flags found.';
+      return;
+    }
+
+    const severityLabel = { high: '🔴', medium: '🟡', low: '⚪' };
+    const flagsHtml = (result.flags || []).map(f => `<li>${severityLabel[f.severity] || '⚪'} <b>${esc(f.issue)}</b> — ${esc(f.why)}</li>`).join('');
+    const messageId = 'suggestedMsg_' + Date.now();
+
+    box.className = 'flag-result ' + (result.verdict === 'unfair' ? 'dirty' : '');
+    box.innerHTML = `
+      <b>${(result.flags || []).length} potential issue(s):</b>
+      <ul>${flagsHtml}</ul>
+      ${result.suggestedMessage ? `
+        <div style="margin-top:12px;">
+          <label style="font-size:12px; color:var(--dim); display:block; margin-bottom:4px;">Suggested message back to the brand:</label>
+          <textarea class="field" id="${messageId}" readonly style="height:90px;">${esc(result.suggestedMessage)}</textarea>
+          <button class="btn-ghost btn btn-sm" style="margin-top:6px;" onclick="copyCheckMessage('${messageId}')">Copy message</button>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  function copyCheckMessage(id){
+    const el = document.getElementById(id);
+    el.select();
+    document.execCommand('copy');
+    alert('Copied — paste it wherever you talk to the brand.');
+  }
+
+  // Free, instant, offline fallback — the same simple keyword check this
+  // feature used to be entirely. Used only when the real AI check can't
+  // run (Free plan, over the daily cap, or a service hiccup) so a creator
+  // is never left with literally nothing.
+  function runLocalCheckFallback(text, reasonMsg){
+    const flags = analyzeTerms(text, 1);
+    const box = document.getElementById('checkResult');
+    const relevant = flags.filter(f => f !== 'No payment amount specified');
+    const notice = reasonMsg ? `<p style="color:var(--dim); font-size:11.5px; margin-bottom:8px;">${esc(reasonMsg)} Showing a basic keyword check instead:</p>` : '';
+    if(relevant.length === 0){
+      box.className = 'flag-result clean';
+      box.innerHTML = notice + '<b>Looks reasonably clean.</b> No major red flags found.';
+    } else {
+      box.className = 'flag-result dirty';
+      box.innerHTML = notice + '<b>' + relevant.length + ' potential issue(s):</b><ul>' + relevant.map(f => `<li>${esc(f)}</li>`).join('') + '</ul>';
+    }
+  }
+
+  function defaultWebsite(){
+    return {
+      theme: { mode:'dark', bg:'#181512', bg2:'#211D18', ink:'#F8F4EC', accent:'#FFC93C', font:'serif' },
+      sections: [
+        { id:'s1', type:'hero', visible:true, eyebrow:'Content Creator & Entrepreneur', headline:'Storytelling.\nBranding.\nBuilding impact.', subtitle:'I create content that connects brands to culture and turns ideas into influence.', image:'' },
+        { id:'s2', type:'stats', visible:true, heading:'' },
+        { id:'s3', type:'story', visible:true, heading:'My Story', body:'I started making content because I loved the craft of it — the editing, the storytelling, the small details most people scroll past.' },
+        { id:'s4', type:'partnerships', visible:true, heading:'Brand Partnerships' },
+        { id:'s5', type:'featured', visible:true, heading:'Featured Work' },
+        { id:'s6', type:'shop', visible:true, heading:'Shop My Picks' },
+        { id:'s7', type:'about', visible:true, heading:'About', body:'' },
+        { id:'s8', type:'contact', visible:true, heading:'Work With Me', body:'I partner with a small number of brands I genuinely use and trust. If that sounds like you, reach out below.' }
+      ]
+    };
+  }
+
+  let currentUser = null; // set once we confirm the Supabase session in loadSession()
+
+  const OPPORTUNITY_CATEGORIES = ['Fashion & Beauty','Travel & Outdoors','Fitness & Health','Food & Beverage','Tech & Productivity','Home & Lifestyle','Other'];
+
+  // Postgres uses snake_case column names; every render function in this
+  // file was written against camelCase properties. These two functions are
+  // the ONLY place that needs to know about the database's actual column
+  // names — everything else in this file is unchanged from before.
+  function mapProfileRow(row){
+    return {
+      id: row.id, email: row.email, username: row.username,
+      displayName: row.display_name, bio: row.bio, goal: row.goal, niche: row.niche,
+      avatarImage: row.avatar_image, platforms: row.platforms || [],
+      stats: row.stats || {}, social: row.social || {}, mediaKit: row.media_kit || { intro:'', services:[] },
+      featuredWork: row.featured_work || [], shopPicks: row.shop_picks || [],
+      manualPartnerships: row.manual_partnerships || [], interestedOpportunities: row.interested_opportunities || [],
+      matchProfile: row.match_profile || { categories:[], minRate:'', availability:'open', dealTypes:[], notes:'' },
+      website: row.website, createdAt: row.created_at,
+      plan: row.plan || 'free', role: row.role || 'creator',
+      stripeConnectStatus: row.stripe_connect_status || 'not_connected',
+      paypalEmail: row.paypal_email || '',
+    };
+  }
+  function mapDealRow(row){
+    return {
+      id: row.id, brand: row.brand, amount: row.amount, platform: row.platform,
+      terms: row.terms, flags: row.flags || [], isPublic: row.is_public, createdAt: row.created_at,
+    };
+  }
+
+  async function persistProfile(){
+    // Only ever writes the columns Settings/Content/Shop/Media-Kit/Deals
+    // actually edit here — website and website_draft belong to the editor,
+    // so leaving them out of every update means this can never clobber
+    // work happening in another tab, no matter when either one saves.
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({
+        display_name: profile.displayName,
+        bio: profile.bio,
+        avatar_image: profile.avatarImage,
+        stats: profile.stats,
+        social: profile.social,
+        media_kit: profile.mediaKit,
+        featured_work: profile.featuredWork,
+        shop_picks: profile.shopPicks,
+        manual_partnerships: profile.manualPartnerships,
+        interested_opportunities: profile.interestedOpportunities,
+        match_profile: profile.matchProfile,
+      })
+      .eq('id', currentUser.id);
+    if(error) throw error;
+  }
+
+  async function loadSession(){
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if(!sessionData.session){
+      document.getElementById('loadingGate').style.display = 'none';
+      document.getElementById('authGate').style.display = 'block';
+      return;
+    }
+    currentUser = sessionData.session.user;
+
+    const { data: profileRow, error: profileErr } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+
+    if(profileErr || !profileRow){
+      document.getElementById('loadingGate').style.display = 'none';
+      document.getElementById('authGate').style.display = 'block';
+      return;
+    }
+
+    profile = mapProfileRow(profileRow);
+    if(profile.role === 'brand'){
+      // Brands get a different, much simpler experience — no portfolio,
+      // no deal logging, none of the creator tools on this page apply.
+      window.location.href = 'brand-dashboard.html';
+      return;
+    }
+    if(!profile.username){
+      // Signed up but never finished onboarding — send them there first.
+      window.location.href = 'onboarding.html';
+      return;
+    }
+    if(!profile.website) profile.website = defaultWebsite();
+
+    const { data: dealRows } = await supabaseClient
+      .from('deals')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    deals = (dealRows || []).map(mapDealRow);
+
+    document.getElementById('loadingGate').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    document.getElementById('tabbar').style.display = 'flex';
+    document.getElementById('ringFab').style.display = 'block';
+
+    populateAll();
+  }
+
+  function populateAll(){
+    const name = profile.displayName || profile.username;
+    document.getElementById('greeting').textContent = 'Hey, ' + name;
+    document.getElementById('homeSiteName').textContent = name;
+    const linkText = 'thelab.me/' + profile.username;
+    document.getElementById('homeSiteLink').textContent = linkText;
+    document.getElementById('homePreviewFrame').src = 'portfolio.html?u=' + encodeURIComponent(profile.username);
+    document.getElementById('accountEmail').textContent = profile.email;
+    document.getElementById('accountUsername').textContent = linkText;
+
+    renderPayouts();
+
+    document.getElementById('editName').value = profile.displayName || '';
+    document.getElementById('editBio').value = profile.bio || '';
+    document.getElementById('editAvatarImage').value = profile.avatarImage || '';
+    document.getElementById('socialInstagram').value = profile.social.instagram || '';
+    document.getElementById('socialTiktok').value = profile.social.tiktok || '';
+    document.getElementById('socialYoutube').value = profile.social.youtube || '';
+    document.getElementById('socialTwitter').value = profile.social.twitter || '';
+    document.getElementById('socialEmail').value = profile.social.email || profile.email || '';
+
+    document.getElementById('statFollowers').value = profile.stats.followers || '';
+    document.getElementById('statViews').value = profile.stats.views || '';
+    document.getElementById('statYears').value = profile.stats.years || '';
+    document.getElementById('kitIntro').value = profile.mediaKit.intro || '';
+    renderServiceTags();
+    renderManualPartnerTags();
+    renderWorkItems(profile.featuredWork);
+    renderShopItems(profile.shopPicks);
+    renderMatchProfile();
+    renderOpportunities();
+    renderDeals();
+    renderSetupRing();
+    renderPlanBadge();
+    applyPlanGating();
+    loadNotifications();
+    loadPartnerAssignments();
+    loadOffers();
+    loadReferrals();
+  }
+
+  /* ---------- PLAN GATING ---------- */
+  const PLAN_LABELS = { free: 'Free', pro: 'Pro', studio: 'Studio' };
+
+  function renderPlanBadge(){
+    const plan = profile.plan || 'free';
+    if(profile.role === 'admin'){ document.getElementById('adminLink').style.display = 'inline-block'; }
+    const wrap = document.getElementById('planBadgeWrap');
+    if(plan === 'free'){
+      wrap.innerHTML = `<div class="plan-badge">Free plan</div> <span class="subtext" style="display:inline; margin:0;">— <a href="#" style="color:var(--gold);" onclick="startUpgrade('pro'); return false;">Upgrade for AI, flagging & opportunities →</a></span>`;
+    } else {
+      wrap.innerHTML = `<div class="plan-badge ${plan}">${PLAN_LABELS[plan]} plan</div>`;
+    }
+  }
+
+  function lockSection(bodyEl, message, targetPlan){
+    bodyEl.innerHTML = `<div class="locked-body"><div class="lock-ic">🔒</div><p>${message}</p><button class="btn btn-ghost btn-sm" onclick="startUpgrade('${targetPlan || 'pro'}')">Upgrade</button></div>`;
+  }
+
+  async function startUpgrade(plan){
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ plan }),
+      });
+      const json = await res.json();
+      if(res.ok && json.url){ window.location.href = json.url; return; }
+      alert(json.error === 'Payments are not set up yet.'
+        ? "Upgrades aren't live yet while payments are being set up. Contact us to be upgraded manually in the meantime."
+        : (json.error || 'Could not start checkout — try again.'));
+    } catch(e){
+      alert("Upgrades aren't live yet while payments are being set up.");
+    }
+  }
+
+  /* ---------- PAYOUTS (Stripe Connect + PayPal) ---------- */
+  const STRIPE_CONNECT_LABEL = {
+    not_connected: { text: 'Not connected', cls: '' },
+    pending: { text: 'Onboarding in progress — finish on Stripe', cls: 'pro' },
+    active: { text: 'Connected ✓', cls: 'pro' },
+    restricted: { text: 'Needs attention on Stripe', cls: '' },
+  };
+
+  function renderPayouts(){
+    const status = profile.stripeConnectStatus || 'not_connected';
+    const label = STRIPE_CONNECT_LABEL[status] || STRIPE_CONNECT_LABEL.not_connected;
+    const btnText = status === 'not_connected' ? 'Connect Stripe'
+      : status === 'pending' ? 'Finish Stripe setup'
+      : status === 'active' ? 'Manage on Stripe'
+      : 'Review on Stripe';
+    document.getElementById('stripeConnectStatus').innerHTML = `
+      <h2 style="font-size:13px;">Stripe</h2>
+      <div class="plan-badge ${label.cls}" style="margin-bottom:8px;">${label.text}</div><br>
+      <button class="btn btn-sm" onclick="connectStripe()">${btnText}</button>
+    `;
+    document.getElementById('paypalEmailInput').value = profile.paypalEmail || '';
+    document.getElementById('paypalSavedNote').textContent = profile.paypalEmail
+      ? 'Currently paying out to: ' + profile.paypalEmail : '';
+  }
+
+  async function connectStripe(){
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch('/api/stripe/create-connect-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      });
+      const json = await res.json();
+      if(res.ok && json.url){ window.location.href = json.url; return; }
+      alert(json.error || 'Could not start Stripe connect — try again.');
+    } catch(e){
+      alert('Payouts are not set up yet. Try again once Stripe Connect is configured.');
+    }
+  }
+
+  async function savePaypalEmail(){
+    const paypalEmail = document.getElementById('paypalEmailInput').value.trim();
+    if(!paypalEmail){ alert('Enter a PayPal email first.'); return; }
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const res = await fetch('/api/paypal/set-payout-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ paypalEmail }),
+      });
+      const json = await res.json();
+      if(!res.ok){ alert(json.error || 'Could not save PayPal email.'); return; }
+      profile.paypalEmail = paypalEmail;
+      renderPayouts();
+    } catch(e){
+      alert('Could not save PayPal email — try again.');
+    }
+  }
+
+  /* ---------- REFERRALS ---------- */
+  function copyReferralLink(){
+    const field = document.getElementById('referralLinkField');
+    field.select();
+    document.execCommand('copy');
+    alert('Copied!');
+  }
+
+  async function loadReferrals(){
+    document.getElementById('referralLinkField').value = window.location.origin + '/signup.html?ref=' + encodeURIComponent(profile.username);
+
+    const { data, error } = await supabaseClient
+      .from('referral_commissions')
+      .select('*')
+      .eq('referrer_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    const box = document.getElementById('referralCommissionsList');
+    if(error){ box.innerHTML = '<div class="empty">Could not load referral history.</div>'; return; }
+    if(!data || data.length === 0){ box.innerHTML = '<div class="empty">No referrals yet — share your link above.</div>'; return; }
+
+    const paidTotal = data.filter(r => r.status === 'paid').reduce((sum, r) => sum + r.amount_cents, 0);
+    box.innerHTML = `
+      <div style="font-size:13px; color:var(--dim); margin-bottom:10px;">Earned so far: <b style="color:var(--gold);">$${(paidTotal/100).toFixed(2)}</b></div>
+      ${data.map(r => `
+        <div class="partner-card">
+          <b>${r.plan.charAt(0).toUpperCase() + r.plan.slice(1)} referral</b>
+          <div class="meta" style="color:var(--dim); font-size:11.5px;">$${(r.amount_cents/100).toFixed(2)} · <span class="badge ${r.status === 'paid' ? 'clean' : 'dirty'}">${r.status}</span></div>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  function applyPlanGating(){
+    const plan = profile.plan || 'free';
+
+    // Red-flag checker — Pro and above
+    if(plan === 'free'){
+      const body = document.querySelector('#rowCheck .list-row-body');
+      if(body && !body.dataset.locked){
+        body.dataset.locked = '1';
+        lockSection(body, "The deal red-flag checker is a Pro feature — catch bad terms before you sign.");
+      }
+    }
+
+    // Brand Opportunities — Pro and above
+    if(plan === 'free'){
+      const body = document.getElementById('oppsBody');
+      if(body){ lockSection(body, "Brand opportunities are a Pro feature."); }
+    }
+
+    // Insights charts — Pro and above (audience stats stay free)
+    const chartCards = document.querySelectorAll('[data-view="insights"] .chart-card');
+    chartCards.forEach(card => {
+      const body = card.querySelector('#lineChartWrap, #platformChart, .donut-row');
+      if(plan === 'free' && body && !card.dataset.locked){
+        card.dataset.locked = '1';
+        const holder = document.createElement('div');
+        lockSection(holder, "Analytics charts are a Pro feature.");
+        body.replaceWith(holder.firstElementChild);
+      }
+    });
+  }
+
+  /* ---------- NOTIFICATIONS ---------- */
+  let notifPanelOpen = false;
+  function toggleNotifPanel(){
+    notifPanelOpen = !notifPanelOpen;
+    document.getElementById('notifPanel').style.display = notifPanelOpen ? 'block' : 'none';
+    if(notifPanelOpen) markAllNotifsRead();
+  }
+
+  async function loadNotifications(){
+    const { data: notifs, error } = await supabaseClient
+      .from('notifications')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if(error){ document.getElementById('notifList').innerHTML = '<div class="empty">Could not load notifications.</div>'; return; }
+
+    const unread = (notifs || []).filter(n => !n.read).length;
+    document.getElementById('notifDot').style.display = unread > 0 ? 'block' : 'none';
+
+    const list = document.getElementById('notifList');
+    list.innerHTML = (notifs && notifs.length) ? notifs.map(n => `
+      <div class="notif-item ${n.read ? '' : 'unread'}">
+        <b>${esc(n.title)}</b>
+        <span>${esc(n.body || '')}</span><br>
+        <span>${new Date(n.created_at).toLocaleDateString()}</span>
+      </div>
+    `).join('') : '<div class="empty">No notifications yet.</div>';
+  }
+
+  async function markAllNotifsRead(){
+    await supabaseClient.from('notifications').update({ read: true }).eq('user_id', currentUser.id).eq('read', false);
+    document.getElementById('notifDot').style.display = 'none';
+  }
+
+  /* ---------- PARTNER PRODUCTS (Studio) ---------- */
+  async function loadPartnerAssignments(){
+    const body = document.getElementById('partnersBody');
+    if(!body) return;
+
+    if(profile.plan !== 'studio'){
+      lockSection(body, "Partner products are a Studio feature — get matched with products and brands The Lab curates for you.", 'studio');
+      return;
+    }
+
+    const { data: assignments, error } = await supabaseClient
+      .from('partner_assignments')
+      .select('*, partner_products(*)')
+      .eq('creator_id', currentUser.id)
+      .order('assigned_at', { ascending: false });
+
+    if(error || !assignments || assignments.length === 0){
+      body.innerHTML = '<div class="empty">No partner products offered yet — check back soon.</div>';
+      return;
+    }
+
+    body.innerHTML = assignments.map(a => {
+      const p = a.partner_products;
+      if(!p) return '';
+      return `<div class="partner-card">
+        <b>${esc(p.name)}</b>
+        <div class="meta" style="color:var(--dim); font-size:11.5px; margin-bottom:6px;">${esc(p.brand_name)} · ${esc(p.price_display || '')}</div>
+        <p style="font-size:12.5px; color:var(--dim); margin-bottom:6px;">${esc(p.description || '')}</p>
+        ${p.terms ? `<div class="terms-note">${esc(p.terms)}</div>` : ''}
+        ${a.status === 'offered' ? `
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn btn-sm" onclick="respondToAssignment('${a.id}', 'accepted')">Accept</button>
+            <button class="btn btn-ghost btn-sm" onclick="respondToAssignment('${a.id}', 'declined')">Decline</button>
+          </div>
+        ` : `<span class="badge ${a.status === 'accepted' ? 'clean' : 'dirty'}">${a.status}</span>`}
+      </div>`;
+    }).join('');
+  }
+
+  async function loadOffers(){
+    const body = document.getElementById('offersBody');
+    if(!body) return;
+
+    const { data: offers, error } = await supabaseClient
+      .from('deal_offers')
+      .select('*')
+      .eq('creator_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if(error){
+      body.innerHTML = '<div class="empty">Could not load offers right now.</div>';
+      return;
+    }
+    if(!offers || offers.length === 0){
+      body.innerHTML = '<div class="empty">No offers yet — when a brand sends you one directly, it shows up here.</div>';
+      return;
+    }
+
+    body.innerHTML = offers.map(o => `
+      <div class="partner-card">
+        <b>${esc(o.brand_name)}</b>
+        <div class="meta" style="color:var(--dim); font-size:11.5px; margin-bottom:6px;">${o.budget ? esc(o.budget) : 'Budget not specified'}</div>
+        <p style="font-size:12.5px; color:var(--dim); margin-bottom:6px;">${esc(o.message || '')}</p>
+        ${o.status === 'pending' ? `
+          <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+            <button class="btn btn-sm" onclick="respondToOffer('${o.id}', 'accepted')">Accept</button>
+            <button class="btn btn-ghost btn-sm" onclick="openCounterForm('${o.id}')">Ask for better terms</button>
+            <button class="btn btn-ghost btn-sm" onclick="respondToOffer('${o.id}', 'declined')">Decline</button>
+          </div>
+          <div id="counterForm_${o.id}" style="display:none; margin-top:10px;">
+            <input type="text" class="field" id="counterBudget_${o.id}" placeholder="What budget would work? (e.g. $800)" style="margin-bottom:6px;">
+            <textarea class="field" id="counterMsg_${o.id}" placeholder="What would need to change? Be specific." style="height:70px;"></textarea>
+            <button class="btn btn-sm" style="margin-top:6px;" onclick="sendCounter('${o.id}')">Send back to ${esc(o.brand_name)}</button>
+          </div>
+        ` : o.status === 'countered' ? `
+          <span class="badge dirty">Waiting on ${esc(o.brand_name)}</span>
+          <div style="margin-top:6px; font-size:12px; color:var(--dim);">You asked for: ${esc(o.counter_budget || 'better terms')}${o.counter_message ? ' — ' + esc(o.counter_message) : ''}</div>
+        ` : `<span class="badge ${o.status === 'accepted' ? 'clean' : 'dirty'}">${o.status}</span>`}
+      </div>
+    `).join('');
+  }
+
+  function openCounterForm(id){
+    const form = document.getElementById('counterForm_' + id);
+    if(form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function sendCounter(id){
+    const budget = document.getElementById('counterBudget_' + id).value.trim();
+    const message = document.getElementById('counterMsg_' + id).value.trim();
+    if(!budget && !message){ alert('Say what you actually need — a budget, a term change, or both.'); return; }
+
+    const { error } = await supabaseClient
+      .from('deal_offers')
+      .update({ status: 'countered', counter_budget: budget, counter_message: message })
+      .eq('id', id);
+    if(error){ alert('Could not send — try again.'); return; }
+    loadOffers();
+  }
+
+  async function respondToOffer(id, status){
+    const { error } = await supabaseClient.from('deal_offers').update({ status }).eq('id', id);
+    if(error){ alert('Could not update — try again.'); return; }
+    loadOffers();
+  }
+
+  async function respondToAssignment(id, status){
+    const { error } = await supabaseClient.from('partner_assignments').update({ status }).eq('id', id);
+    if(error){ alert('Could not update — try again.'); return; }
+    loadPartnerAssignments();
+  }
+
+  function renderStats(){
+    document.getElementById('statDeals').textContent = deals.length;
+    document.getElementById('statFlagged').textContent = deals.filter(d => d.flags.length > 0).length;
+    const total = deals.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    document.getElementById('statPayout').textContent = '$' + total.toLocaleString();
+  }
+
+  function renderSetupRing(){
+    const checks = [
+      !!(profile.bio && profile.bio.trim().length > 5),
+      !!(profile.platforms && profile.platforms.length > 0),
+      deals.length > 0,
+      !!(profile.featuredWork && profile.featuredWork.length > 0),
+    ];
+    const done = checks.filter(Boolean).length;
+    const pct = Math.round((done / checks.length) * 100);
+    const circumference = 150.8;
+    document.getElementById('ringProgress').style.strokeDashoffset = circumference - (circumference * pct / 100);
+    document.getElementById('ringFabLabel').textContent = pct + '%';
+  }
+
+  function openPortfolio(){ window.open('portfolio.html?u=' + encodeURIComponent(profile.username), '_blank'); }
+  function openMediaKit(){ window.open('mediakit.html?u=' + encodeURIComponent(profile.username), '_blank'); }
+  function copyLink(){
+    const url = window.location.origin + window.location.pathname.replace('dashboard.html','') + 'portfolio.html?u=' + encodeURIComponent(profile.username);
+    navigator.clipboard && navigator.clipboard.writeText(url);
+    alert('Link copied: ' + url);
+  }
+  async function logout(){
+    await supabaseClient.auth.signOut();
+    window.location.href = 'landing.html';
+  }
+
+  function renderDeals(){
+    renderStats();
+    const list = document.getElementById('dealsList');
+    if(deals.length === 0){ list.innerHTML = '<div class="empty">No deals logged yet.</div>'; return; }
+    list.innerHTML = deals.slice().reverse().map(d => `
+      <div class="deal">
+        <div>
+          <b>${esc(d.brand)}</b>
+          <div class="meta">${esc(d.platform)} · $${Number(d.amount || 0).toLocaleString()} · ${new Date(d.createdAt).toLocaleDateString()}</div>
+        </div>
+        <div class="deal-actions">
+          <span class="badge ${d.flags.length ? 'dirty' : 'clean'}">${d.flags.length ? d.flags.length + ' flagged' : 'Clean'}</span>
+          <button class="tiny-btn" onclick="toggleDealPublic('${d.id}')">${d.isPublic === false ? 'Private' : 'Public'} · toggle</button>
+          <button class="tiny-btn" onclick="deleteDeal('${d.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  async function deleteDeal(id){
+    if(!confirm('Delete this logged deal? This cannot be undone.')) return;
+    const { error } = await supabaseClient
+      .from('deals')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', currentUser.id);
+    if(error){ alert('Could not delete — try again.'); return; }
+    deals = deals.filter(d => d.id !== id);
+    renderDeals();
+    renderSetupRing();
+  }
+  async function toggleDealPublic(id){
+    const d = deals.find(x => x.id === id);
+    if(!d) return;
+    const newValue = d.isPublic === false ? true : false;
+    const { error } = await supabaseClient
+      .from('deals')
+      .update({ is_public: newValue })
+      .eq('id', id)
+      .eq('user_id', currentUser.id);
+    if(error){ alert('Could not update — try again.'); return; }
+    d.isPublic = newValue;
+    renderDeals();
+  }
+  async function addDeal(){
+    if((profile.plan || 'free') === 'free' && deals.length >= 5){
+      alert('Free is capped at 5 logged deals. Upgrade to Pro for unlimited deal logging.');
+      return;
+    }
+    const brand = document.getElementById('dealBrand').value.trim();
+    const amount = document.getElementById('dealAmount').value;
+    const platform = document.getElementById('dealPlatform').value;
+    const terms = document.getElementById('dealTerms').value;
+    const isPublic = document.getElementById('dealPublic').checked;
+    if(!brand){ alert('Add a brand name first.'); return; }
+    const flags = analyzeTerms(terms, amount);
+
+    const { data: inserted, error } = await supabaseClient
+      .from('deals')
+      .insert({
+        user_id: currentUser.id, brand, amount: Number(amount) || 0, platform,
+        terms, flags, is_public: isPublic,
+      })
+      .select()
+      .single();
+
+    if(error){ alert('Could not save — try again. (' + error.message + ')'); return; }
+
+    deals.push(mapDealRow(inserted));
+    document.getElementById('dealBrand').value = '';
+    document.getElementById('dealAmount').value = '';
+    document.getElementById('dealTerms').value = '';
+    renderDeals();
+    renderSetupRing();
+  }
+
+  function renderManualPartnerTags(){
+    const el = document.getElementById('manualPartnerTags');
+    const list = profile.manualPartnerships || [];
+    el.innerHTML = list.length
+      ? list.map((p, i) => `<div class="tag">${esc(p)}<button onclick="removeManualPartner(${i})">×</button></div>`).join('')
+      : '<div class="empty">None added yet.</div>';
+  }
+  async function addManualPartner(){
+    const input = document.getElementById('manualPartnerInput');
+    const val = input.value.trim();
+    if(!val) return;
+    profile.manualPartnerships.push(val);
+    input.value = '';
+    renderManualPartnerTags();
+    try{ await persistProfile(); } catch(e){}
+  }
+  async function removeManualPartner(i){
+    profile.manualPartnerships.splice(i, 1);
+    renderManualPartnerTags();
+    try{ await persistProfile(); } catch(e){}
+  }
+
+  function renderMatchProfile(){
+    const mp = profile.matchProfile;
+    const catWrap = document.getElementById('matchCategories');
+    catWrap.innerHTML = OPPORTUNITY_CATEGORIES.map(c => {
+      const selected = (mp.categories || []).includes(c);
+      return `<button type="button" class="pref-chip${selected ? ' selected' : ''}" onclick="toggleMatchCategory('${c.replace(/'/g,"\\'")}')">${esc(c)}</button>`;
+    }).join('');
+    document.getElementById('matchMinRate').value = mp.minRate || '';
+    document.getElementById('matchAvailability').value = mp.availability || 'open';
+    document.getElementById('matchNotes').value = mp.notes || '';
+    renderDealTypeTags();
+  }
+  function toggleMatchCategory(cat){
+    const list = profile.matchProfile.categories || (profile.matchProfile.categories = []);
+    const idx = list.indexOf(cat);
+    if(idx === -1) list.push(cat); else list.splice(idx, 1);
+    renderMatchProfile();
+  }
+  function renderDealTypeTags(){
+    const el = document.getElementById('dealTypeTags');
+    const list = profile.matchProfile.dealTypes || [];
+    el.innerHTML = list.length
+      ? list.map((s, i) => `<div class="tag">${esc(s)}<button onclick="removeDealType(${i})">×</button></div>`).join('')
+      : '<div class="empty">None added yet.</div>';
+  }
+  function addDealType(){
+    const input = document.getElementById('dealTypeInput');
+    const val = input.value.trim();
+    if(!val) return;
+    (profile.matchProfile.dealTypes || (profile.matchProfile.dealTypes = [])).push(val);
+    input.value = '';
+    renderDealTypeTags();
+  }
+  function removeDealType(i){
+    profile.matchProfile.dealTypes.splice(i, 1);
+    renderDealTypeTags();
+  }
+  async function saveMatchProfile(){
+    profile.matchProfile.minRate = document.getElementById('matchMinRate').value.trim();
+    profile.matchProfile.availability = document.getElementById('matchAvailability').value;
+    profile.matchProfile.notes = document.getElementById('matchNotes').value.trim();
+    try{ await persistProfile(); alert('Saved.'); renderOpportunities(); } catch(e){ alert('Could not save.'); }
+  }
+
+  async function renderOpportunities(){
+    const { data: opps, error } = await supabaseClient.from('opportunities').select('*');
+    if(error){
+      document.getElementById('oppsBody').innerHTML = '<div class="empty">Could not load opportunities right now.</div>';
+      return;
+    }
+    const myCategories = (profile.matchProfile && profile.matchProfile.categories) || [];
+    const sorted = (opps || []).slice().sort((a, b) => {
+      const aMatch = myCategories.includes(a.category) ? 1 : 0;
+      const bMatch = myCategories.includes(b.category) ? 1 : 0;
+      return bMatch - aMatch;
+    });
+    const body = document.getElementById('oppsBody');
+    body.innerHTML = sorted.length ? sorted.map(o => {
+      const interested = (profile.interestedOpportunities || []).includes(o.id);
+      const matches = myCategories.includes(o.category);
+      return `<div class="opp-card">
+        ${matches ? '<div class="match-badge">🎯 Matches what you\u2019re looking for</div>' : ''}
+        <b>${esc(o.brand)}</b>
+        <div class="meta">${esc(o.category)} · ${esc(o.budget)}</div>
+        <p>${esc(o.description)}</p>
+        <button class="${interested ? 'interested' : 'btn-ghost'}" onclick="toggleOpportunity('${o.id}')">${interested ? '✓ Interested' : "I'm interested"}</button>
+      </div>`;
+    }).join('') : '<div class="empty">No open opportunities right now — check back soon.</div>';
+  }
+  async function toggleOpportunity(id){
+    const list = profile.interestedOpportunities || (profile.interestedOpportunities = []);
+    const idx = list.indexOf(id);
+    if(idx === -1) list.push(id); else list.splice(idx, 1);
+    try{ await persistProfile(); } catch(e){}
+    renderOpportunities();
+  }
+
+  function renderWorkItems(items){
+    const container = document.getElementById('workItems');
+    container.innerHTML = '';
+    (items || []).forEach(item => {
+      const node = document.getElementById('workItemTemplate').content.cloneNode(true);
+      node.querySelector('.item-title').value = item.title || '';
+      node.querySelector('.item-subtitle').value = item.subtitle || '';
+      node.querySelector('.item-image').value = item.image || '';
+      node.querySelector('.item-color').value = item.color || '#2A241D';
+      container.appendChild(node);
+    });
+  }
+  function addWorkItem(){ document.getElementById('workItems').appendChild(document.getElementById('workItemTemplate').content.cloneNode(true)); }
+  function readWorkItems(){
+    return [...document.getElementById('workItems').children].map(card => ({
+      title: card.querySelector('.item-title').value.trim(),
+      subtitle: card.querySelector('.item-subtitle').value.trim(),
+      image: card.querySelector('.item-image').value.trim(),
+      color: card.querySelector('.item-color').value,
+    })).filter(i => i.title);
+  }
+  async function saveContent(){
+    profile.featuredWork = readWorkItems();
+    try{ await persistProfile(); alert('Saved.'); renderSetupRing(); refreshHomePreview(); } catch(e){ alert('Could not save.'); }
+  }
+
+  function renderShopItems(items){
+    const container = document.getElementById('shopItems');
+    container.innerHTML = '';
+    (items || []).forEach(item => {
+      const node = document.getElementById('shopItemTemplate').content.cloneNode(true);
+      const card = node.querySelector('.item-card');
+      card.dataset.id = item.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
+      node.querySelector('.item-name').value = item.name || '';
+      node.querySelector('.item-price').value = item.price || '';
+      node.querySelector('.item-type').value = item.type || 'own';
+      node.querySelector('.item-url').value = item.url || '';
+      node.querySelector('.item-image').value = item.image || '';
+      node.querySelector('.item-color').value = item.color || '#2A241D';
+      const sellBox = node.querySelector('.item-sell-lab');
+      sellBox.checked = !!item.sellOnLab;
+      node.querySelector('.item-kind').value = item.kind || 'digital';
+      node.querySelector('.item-delivery').value = item.deliveryValue || '';
+      container.appendChild(node);
+      // Toggle visibility after the card is actually in the DOM
+      const lastCard = container.lastElementChild;
+      lastCard.querySelector('.lab-sale-fields').style.display = item.sellOnLab ? 'block' : 'none';
+      lastCard.querySelector('.digital-delivery-fields').style.display = (item.kind || 'digital') === 'digital' ? 'block' : 'none';
+      if(item.deliveryFilePath){
+        lastCard.dataset.filePath = item.deliveryFilePath;
+        lastCard.querySelector('.item-delivery-file-status').innerHTML = `Uploaded: ${esc(item.deliveryFileName || 'file.pdf')} <a href="#" onclick="removeDigitalFile(this); return false;" style="color:var(--error, #E4634F); margin-left:6px;">remove</a>`;
+      }
+    });
+  }
+
+  function onSellOnLabToggle(checkbox){
+    const fields = checkbox.closest('.item-card').querySelector('.lab-sale-fields');
+    fields.style.display = checkbox.checked ? 'block' : 'none';
+    if(checkbox.checked && (profile.stripeConnectStatus || 'not_connected') !== 'active'){
+      alert("Heads up — you haven't connected Stripe yet in Payouts (Settings). You can still set this up now, but buyers can't check out until Stripe shows Connected.");
+    }
+  }
+
+  function onKindChange(select){
+    const card = select.closest('.item-card');
+    const digitalFields = card.querySelector('.digital-delivery-fields');
+    digitalFields.style.display = select.value === 'digital' ? 'block' : 'none';
+  }
+
+  async function uploadDigitalFile(input){
+    const file = input.files[0];
+    if(!file) return;
+    const card = input.closest('.item-card');
+    const statusEl = card.querySelector('.item-delivery-file-status');
+
+    if(file.type !== 'application/pdf'){ alert('Only PDF files are supported right now.'); input.value = ''; return; }
+    if(file.size > 50 * 1024 * 1024){ alert('That file is over the 50MB limit.'); input.value = ''; return; }
+
+    statusEl.textContent = 'Uploading…';
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if(!userId){ statusEl.textContent = 'Log in again to upload.'; return; }
+
+    const path = `${userId}/${card.dataset.id}-${Date.now()}.pdf`;
+    const { error } = await supabaseClient.storage
+      .from('shop-digital-products')
+      .upload(path, file, { upsert: true, contentType: 'application/pdf' });
+
+    if(error){ statusEl.textContent = 'Upload failed — try again.'; console.error(error); return; }
+    card.dataset.filePath = path;
+    statusEl.innerHTML = `Uploaded: ${file.name} <a href="#" onclick="removeDigitalFile(this); return false;" style="color:var(--error, #E4634F); margin-left:6px;">remove</a>`;
+  }
+
+  function removeDigitalFile(link){
+    const card = link.closest('.item-card');
+    delete card.dataset.filePath;
+    card.querySelector('.item-delivery-file-status').textContent = '';
+    card.querySelector('.item-delivery-file-input').value = '';
+  }
+
+  // Turns "$29", "29.99", "29" into cents. Returns 0 (not sellable) if it can't parse a number.
+  function priceStringToCents(str){
+    const n = parseFloat(String(str || '').replace(/[^0-9.]/g, ''));
+    return Number.isFinite(n) ? Math.round(n * 100) : 0;
+  }
+  function addShopItem(){
+    const node = document.getElementById('shopItemTemplate').content.cloneNode(true);
+    const container = document.getElementById('shopItems');
+    container.appendChild(node);
+    container.lastElementChild.dataset.id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+  }
+  function readShopItems(){
+    return [...document.getElementById('shopItems').children].map(card => ({
+      id: card.dataset.id,
+      name: card.querySelector('.item-name').value.trim(),
+      price: card.querySelector('.item-price').value.trim(),
+      priceCents: priceStringToCents(card.querySelector('.item-price').value),
+      type: card.querySelector('.item-type').value,
+      url: card.querySelector('.item-url').value.trim(),
+      image: card.querySelector('.item-image').value.trim(),
+      color: card.querySelector('.item-color').value,
+      sellOnLab: card.querySelector('.item-sell-lab').checked,
+      kind: card.querySelector('.item-kind').value,
+      deliveryValue: card.querySelector('.item-delivery').value.trim(),
+      deliveryFilePath: card.dataset.filePath || null,
+      deliveryFileName: card.dataset.filePath ? (card.querySelector('.item-delivery-file-input').files[0]?.name || 'file.pdf') : null,
+    })).filter(i => i.name);
+  }
+  async function saveShop(){
+    profile.shopPicks = readShopItems();
+    try{ await persistProfile(); alert('Saved.'); refreshHomePreview(); } catch(e){ alert('Could not save.'); }
+  }
+
+  function refreshHomePreview(){
+    document.getElementById('homePreviewFrame').src = 'portfolio.html?u=' + encodeURIComponent(profile.username) + '&t=' + Date.now();
+  }
+
+  function renderServiceTags(){
+    const el = document.getElementById('serviceTags');
+    const list = profile.mediaKit.services || [];
+    el.innerHTML = list.length
+      ? list.map((s, i) => `<div class="tag">${esc(s)}<button onclick="removeService(${i})">×</button></div>`).join('')
+      : '<div class="empty">None added yet.</div>';
+  }
+  function addService(){
+    const input = document.getElementById('serviceInput');
+    const val = input.value.trim();
+    if(!val) return;
+    profile.mediaKit.services.push(val);
+    input.value = '';
+    renderServiceTags();
+  }
+  function removeService(i){ profile.mediaKit.services.splice(i, 1); renderServiceTags(); }
+  async function saveMediaKit(){
+    profile.mediaKit.intro = document.getElementById('kitIntro').value.trim();
+    try{ await persistProfile(); alert('Saved.'); } catch(e){ alert('Could not save.'); }
+  }
+  async function saveAudienceStats(){
+    profile.stats = {
+      followers: document.getElementById('statFollowers').value.trim(),
+      views: document.getElementById('statViews').value.trim(),
+      years: document.getElementById('statYears').value.trim(),
+    };
+    try{ await persistProfile(); alert('Saved.'); renderCharts(); } catch(e){ alert('Could not save.'); }
+  }
+
+  async function saveSettings(){
+    profile.displayName = document.getElementById('editName').value.trim();
+    profile.bio = document.getElementById('editBio').value.trim();
+    profile.avatarImage = document.getElementById('editAvatarImage').value.trim();
+    profile.social = {
+      instagram: document.getElementById('socialInstagram').value.trim(),
+      tiktok: document.getElementById('socialTiktok').value.trim(),
+      youtube: document.getElementById('socialYoutube').value.trim(),
+      twitter: document.getElementById('socialTwitter').value.trim(),
+      email: document.getElementById('socialEmail').value.trim(),
+    };
+    try{
+      await persistProfile();
+      alert('Saved.');
+      document.getElementById('greeting').textContent = 'Hey, ' + (profile.displayName || profile.username);
+      document.getElementById('homeSiteName').textContent = profile.displayName || profile.username;
+      renderSetupRing();
+      refreshHomePreview();
+    } catch(e){ alert('Could not save.'); }
+  }
+
+  function renderCharts(){
+    const sorted = deals.slice().sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const wrap = document.getElementById('lineChartWrap');
+    if(sorted.length === 0){
+      wrap.innerHTML = '<div class="empty">Log a deal to see this chart.</div>';
+    } else {
+      let cum = 0;
+      const points = sorted.map(d => { cum += Number(d.amount)||0; return cum; });
+      const max = Math.max(...points, 1);
+      const w = 560, h = 100, pad = 6;
+      const stepX = points.length > 1 ? (w - pad*2) / (points.length - 1) : 0;
+      const coords = points.map((v,i) => {
+        const x = pad + i*stepX;
+        const y = h - pad - ((v / max) * (h - pad*2));
+        return [x,y];
+      });
+      const path = coords.map((c,i) => (i===0?'M':'L') + c[0].toFixed(1) + ',' + c[1].toFixed(1)).join(' ');
+      const area = path + ` L${coords[coords.length-1][0].toFixed(1)},${h} L${coords[0][0].toFixed(1)},${h} Z`;
+      wrap.innerHTML = `<svg class="line-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <path d="${area}" fill="rgba(255,201,60,0.12)" stroke="none"/>
+        <path d="${path}" fill="none" stroke="#FFC93C" stroke-width="2.5"/>
+      </svg>
+      <div class="subtext" style="margin:6px 0 0;">Total tracked: $${cum.toLocaleString()}</div>`;
+    }
+
+    const byPlatform = {};
+    deals.forEach(d => { byPlatform[d.platform] = (byPlatform[d.platform] || 0) + 1; });
+    const platformEl = document.getElementById('platformChart');
+    const entries = Object.entries(byPlatform);
+    if(entries.length === 0){
+      platformEl.innerHTML = '<div class="empty">No deals logged yet.</div>';
+    } else {
+      const max = Math.max(...entries.map(e => e[1]));
+      platformEl.innerHTML = entries.map(([name, count]) => `
+        <div class="bar-col">
+          <div class="bar-value">${count}</div>
+          <div class="bar" style="height:${Math.max(6, (count/max)*100)}px;"></div>
+          <div class="bar-label">${esc(name)}</div>
+        </div>
+      `).join('');
+    }
+
+    const flagged = deals.filter(d => d.flags.length > 0).length;
+    const clean = deals.length - flagged;
+    const donut = document.getElementById('flagDonut');
+    const legend = document.getElementById('flagLegend');
+    if(deals.length === 0){
+      donut.style.background = 'var(--ink)';
+      legend.innerHTML = '<div class="empty">No deals logged yet.</div>';
+    } else {
+      const pct = Math.round((clean / deals.length) * 100);
+      donut.style.background = `conic-gradient(#3FA679 0% ${pct}%, #E4634F ${pct}% 100%)`;
+      legend.innerHTML = `
+        <div><span class="dot" style="background:#3FA679;"></span>Clean — ${clean}</div>
+        <div><span class="dot" style="background:#E4634F;"></span>Flagged — ${flagged}</div>
+      `;
+    }
+  }
+
+  loadSession();
+</script>
+</body>
+</html>

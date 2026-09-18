@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join The Lab</title>
+<meta name="description" content="Track brand deals, get flagged before you sign something bad, and build a creator website — free to start.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --ink:#181512;
+    --ink-2:#211D18;
+    --paper:#F8F4EC;
+    --gold:#FFC93C;
+    --line:rgba(248,244,236,0.14);
+    --dim:rgba(248,244,236,0.6);
+    --error:#E4634F;
+    --signal:#3FA679;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--ink); color:var(--paper);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh; display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  header{padding:26px 28px;}
+  .logo{display:flex; align-items:center; gap:8px; font-family:'Fraunces', serif; font-weight:800; font-size:20px; text-decoration:none; color:var(--paper); width:fit-content;}
+  .logo-mark{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; background:var(--gold); border-radius:8px; color:var(--ink); font-family:'Fraunces',serif; font-weight:800; flex-shrink:0;}
+
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:20px 20px 60px;}
+  .card{width:100%; max-width:400px; text-align:center;}
+  h1{font-family:'Fraunces', serif; font-weight:800; font-size:32px; margin-bottom:8px;}
+  .sub{color:var(--dim); font-size:15px; margin-bottom:36px;}
+
+  .field{
+    width:100%; background:var(--ink-2); border:1px solid var(--line);
+    border-radius:10px; padding:14px 16px; color:var(--paper);
+    font-size:15px; margin-bottom:14px; outline:none; text-align:left;
+  }
+  .field::placeholder{color:var(--dim);}
+  .field:focus{border-color:var(--gold);}
+
+  .btn{
+    width:100%; padding:14px; border-radius:10px; font-size:15px; font-weight:600;
+    border:1px solid var(--line); cursor:pointer; display:flex; align-items:center;
+    justify-content:center; gap:10px; text-decoration:none; color:var(--paper);
+    background:var(--ink-2); margin-bottom:12px; transition:transform .15s ease;
+  }
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:#FFFFFF; color:var(--ink); border-color:#FFFFFF; font-weight:700;}
+  .btn-primary:disabled{opacity:0.5; cursor:not-allowed; transform:none;}
+
+  .fine{font-size:12.5px; color:var(--dim); line-height:1.5; margin:18px 0 26px; text-align:left;}
+  .fine a{color:var(--paper);}
+
+  .switch{margin-top:28px; font-size:14px; color:var(--dim);}
+  .switch a{color:var(--gold); text-decoration:none; font-weight:600;}
+
+  .message{padding:12px 14px; border-radius:10px; font-size:13.5px; margin-bottom:16px; text-align:left; display:none;}
+  .message.error{background:rgba(228,99,79,0.12); border:1px solid rgba(228,99,79,0.4); color:var(--error); display:block;}
+  .message.success{background:rgba(63,166,121,0.12); border:1px solid rgba(63,166,121,0.4); color:var(--signal); display:block;}
+
+  footer{padding:24px; text-align:center; font-size:12px; color:var(--dim);}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="landing.html" class="logo"><span class="logo-mark">L</span>The Lab</a>
+</header>
+
+<main>
+  <div class="card">
+    <h1 id="heading">Join The Lab</h1>
+    <p class="sub" id="subheading">Track deals, get flagged before you sign, build a portfolio brands trust.</p>
+
+    <div class="message" id="messageBox"></div>
+
+    <input type="email" class="field" placeholder="Email" id="emailField" autocomplete="email" oninput="toggleContinue()">
+    <input type="password" class="field" placeholder="Password (at least 6 characters)" id="passwordField" autocomplete="current-password" oninput="toggleContinue()">
+    <!-- Honeypot: invisible to real people, but bots that auto-fill every field tend to fill this one. If it has a value on submit, we quietly treat it as spam. -->
+    <input type="text" name="website" id="honeypot" autocomplete="off" tabindex="-1" style="position:absolute; left:-9999px; width:1px; height:1px; opacity:0;">
+    <button class="btn btn-primary" id="continueBtn" disabled>Continue</button>
+
+    <p class="fine" id="fineprint">
+      By clicking Continue, you agree to The Lab's
+      <a href="privacy.html">Privacy Notice</a> and <a href="terms.html">Terms</a>.
+    </p>
+
+    <p class="switch" id="switchLine">
+      Already have an account? <a href="#" onclick="setMode('login'); return false;">Log in</a>
+    </p>
+    <p class="switch" id="forgotLine" style="display:none; margin-top:10px;">
+      <a href="#" onclick="handleForgotPassword(); return false;">Forgot your password?</a>
+    </p>
+  </div>
+</main>
+
+<footer>The Lab · Portfolios, deal tracking & payouts live today</footer>
+
+<script>
+  function toggleContinue(){
+    const email = document.getElementById('emailField').value.trim();
+    const pw = document.getElementById('passwordField').value;
+    const validEmail = email.includes('@') && email.includes('.');
+    document.getElementById('continueBtn').disabled = !(validEmail && pw.length >= 6);
+  }
+
+  function showMessage(text, type){
+    const box = document.getElementById('messageBox');
+    box.textContent = text;
+    box.className = 'message ' + type;
+  }
+  function clearMessage(){
+    const box = document.getElementById('messageBox');
+    box.textContent = '';
+    box.className = 'message';
+  }
+
+  let mode = 'signup';
+
+  function setMode(m){
+    mode = m;
+    clearMessage();
+    const heading = document.getElementById('heading');
+    const sub = document.getElementById('subheading');
+    const fineprint = document.getElementById('fineprint');
+    const btn = document.getElementById('continueBtn');
+    const switchLine = document.getElementById('switchLine');
+    document.getElementById('passwordField').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+
+    if(m === 'login'){
+      heading.textContent = 'Welcome back';
+      sub.textContent = 'Log in to your The Lab account.';
+      fineprint.style.display = 'none';
+      btn.textContent = 'Log in';
+      switchLine.innerHTML = 'New to The Lab? <a href="#" onclick="setMode(\'signup\'); return false;">Sign up free</a>';
+      document.getElementById('forgotLine').style.display = 'block';
+    } else {
+      heading.textContent = 'Join The Lab';
+      sub.textContent = 'Track deals, get flagged before you sign, build a portfolio brands trust.';
+      fineprint.style.display = 'block';
+      btn.textContent = 'Continue';
+      switchLine.innerHTML = 'Already have an account? <a href="#" onclick="setMode(\'login\'); return false;">Log in</a>';
+      document.getElementById('forgotLine').style.display = 'none';
+    }
+  }
+
+  async function handleForgotPassword(){
+    const email = document.getElementById('emailField').value.trim();
+    if(!email || !email.includes('@')){
+      showMessage('Enter your email above first, then click "Forgot your password?" again.', 'error');
+      return;
+    }
+    clearMessage();
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html',
+    });
+    // Deliberately the same message whether or not the email exists —
+    // confirming which emails have accounts is a real information leak
+    // (it tells an attacker exactly who to target), so this response
+    // never reveals that either way.
+    showMessage(
+      error ? "Couldn't send the reset email — try again in a moment." : `If ${email} has an account, a reset link is on its way.`,
+      error ? 'error' : 'success'
+    );
+  }
+
+  async function handleContinue(){
+    // If this hidden field has a value, a bot filled it in — quietly stop
+    // here without giving any signal back that would help a bot adapt.
+    if(document.getElementById('honeypot').value){ return; }
+
+    const email = document.getElementById('emailField').value.trim().toLowerCase();
+    const password = document.getElementById('passwordField').value;
+    const btn = document.getElementById('continueBtn');
+    if(!email || !password) return;
+
+    clearMessage();
+    btn.disabled = true;
+    btn.textContent = mode === 'login' ? 'Logging in…' : 'Creating account…';
+
+    if(mode === 'login'){
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if(error){
+        showMessage(error.message === 'Invalid login credentials'
+          ? "That email or password doesn't match an account. Check for typos, or sign up if you're new."
+          : error.message, 'error');
+        btn.disabled = false; btn.textContent = 'Log in';
+        return;
+      }
+      await attributeReferralIfAny();
+      window.location.href = 'dashboard.html';
+
+    } else {
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      if(error){
+        showMessage(error.message, 'error');
+        btn.disabled = false; btn.textContent = 'Continue';
+        return;
+      }
+
+      if(data.session){
+        await attributeReferralIfAny();
+        window.location.href = 'onboarding.html';
+      } else {
+        showMessage("Check your email (" + email + ") for a confirmation link, then come back here and log in.", 'success');
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+      }
+    }
+  }
+
+  // Referral attribution — captured from ?ref=username on page load
+  // (stored in localStorage so it survives an email-confirmation round
+  // trip, since a session isn't available until whichever login actually
+  // succeeds — that could be a moment after signUp() if confirmation is
+  // required, or after a later login on this same page).
+  (function captureReferralParam(){
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if(ref) localStorage.setItem('lab_ref', ref.toLowerCase().trim());
+  })();
+
+  async function attributeReferralIfAny(){
+    const ref = localStorage.getItem('lab_ref');
+    if(!ref) return;
+    try{
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if(!token) return;
+      await fetch('/api/set-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ refUsername: ref }),
+      });
+      localStorage.removeItem('lab_ref'); // one-shot — never try again after this
+    } catch(e){ /* non-critical — a missed attribution isn't worth blocking signup over */ }
+  }
+
+  document.getElementById('continueBtn').addEventListener('click', handleContinue);
+
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('mode') === 'login'){ setMode('login'); }
+
+  (async () => {
+    const { data } = await supabaseClient.auth.getSession();
+    if(data.session){ window.location.href = 'dashboard.html'; }
+  })();
+</script>
+</body>
+</html>

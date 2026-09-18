@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — The Lab</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{ --ink:#181512; --ink-2:#211D18; --paper:#F8F4EC; --gold:#FFC93C; --line:rgba(248,244,236,0.14); --dim:rgba(248,244,236,0.6); --signal:#3FA679; --stamp:#E4634F; }
+  *{box-sizing:border-box;}
+  body{background:var(--ink); color:var(--paper); font-family:'IBM Plex Sans',sans-serif; margin:0;}
+  .wrap{max-width:900px; margin:0 auto; padding:0 20px 80px;}
+  header{display:flex; align-items:center; justify-content:space-between; padding:20px 0;}
+  .logo{font-family:'Fraunces',serif; font-weight:800; font-size:18px;}
+  h1{font-family:'Fraunces',serif; font-weight:800; font-size:22px; margin:0 0 4px;}
+  h2{font-family:'Fraunces',serif; font-weight:700; font-size:16px; margin:0 0 12px;}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:20px;}
+  .card{background:var(--ink-2); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:20px;}
+  .field{width:100%; background:var(--ink); border:1px solid var(--line); border-radius:9px; padding:10px 12px; color:var(--paper); font-size:13.5px; margin-bottom:10px;}
+  textarea.field{resize:none; height:60px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .btn{padding:9px 16px; border-radius:8px; font-size:13px; font-weight:600; border:none; cursor:pointer; background:#fff; color:var(--ink);}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--paper);}
+  .btn-sm{padding:6px 12px; font-size:12px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th, td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  th{color:var(--dim); font-weight:600; font-size:11.5px; text-transform:uppercase;}
+  select{background:var(--ink); border:1px solid var(--line); color:var(--paper); border-radius:6px; padding:5px 8px; font-size:12.5px;}
+  .badge{font-size:10px; padding:3px 8px; border-radius:20px; font-family:'IBM Plex Mono',monospace;}
+  .badge.free{background:var(--ink); color:var(--dim);}
+  .badge.pro{background:rgba(255,201,60,0.15); color:var(--gold);}
+  .badge.studio{background:rgba(196,143,240,0.15); color:#C48FF0;}
+  .badge.brand{background:rgba(63,166,121,0.15); color:var(--signal);}
+  .empty{color:var(--dim); font-size:13px;}
+  .gate{text-align:center; padding:100px 24px; color:var(--dim);}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">Checking access…</div>
+
+<div class="wrap" id="app" style="display:none;">
+  <header>
+    <div class="logo">The Lab — Admin</div>
+    <a href="dashboard.html" class="btn-ghost btn" style="text-decoration:none;">Back to app</a>
+  </header>
+
+  <div class="card">
+    <h2>Users</h2>
+    <p class="sub">Set a creator's plan manually while payments are being wired up, or approve a business as a Brand account.</p>
+    <input type="text" class="field" id="userSearch" placeholder="Search by username or email…" oninput="renderUsers()">
+    <div id="usersTable"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Partner Products</h2>
+    <p class="sub">Products/brands The Lab can offer creators to feature on their Shop. Creators only ever see what you've assigned to them — nothing here is public until assigned.</p>
+    <input type="text" class="field" id="ppName" placeholder="Product name">
+    <div class="row2">
+      <input type="text" class="field" id="ppBrand" placeholder="Brand name">
+      <select class="field" id="ppKind"><option value="physical">Physical product</option><option value="digital">Digital product</option><option value="affiliate">Affiliate link</option></select>
+    </div>
+    <div class="row2">
+      <input type="text" class="field" id="ppPrice" placeholder="Price display (e.g. $29)">
+      <input type="number" class="field" id="ppPriceCents" placeholder="Checkout price in USD (leave blank = showcase only, no purchase)" step="0.01" min="0">
+      <input type="text" class="field" id="ppImage" placeholder="Image URL (optional)">
+    </div>
+    <textarea class="field" id="ppDescription" placeholder="Description shown to the creator"></textarea>
+    <textarea class="field" id="ppTerms" placeholder="Terms shown to the creator — e.g. 'You're the seller/face for this drop. The Lab and the brand retain ownership of the product and brand; you do not acquire any rights to the product itself, only the agreed commission/fee for featuring it.'"></textarea>
+    <button class="btn" onclick="createPartnerProduct()">Add product</button>
+    <div id="partnerProductsTable" style="margin-top:16px;"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Assign a product to a creator</h2>
+    <p class="sub">This is how a specific creator gets offered a specific product — they're notified automatically the moment you do this.</p>
+    <div class="row2">
+      <select class="field" id="assignProduct"></select>
+      <input type="text" class="field" id="assignUsername" placeholder="Creator's username">
+    </div>
+    <button class="btn" onclick="assignPartnerProduct()">Assign & notify</button>
+  </div>
+
+  <div class="card">
+    <h2>Referral Payouts</h2>
+    <p class="sub">$15 one-time, owed the moment someone's referral becomes a paying subscriber. Pays out to whichever method the referrer has connected — Stripe or PayPal.</p>
+    <div id="referralPayoutsTable"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Partner Drop Sales</h2>
+    <p class="sub">Sales of your own priced partner products. Money already went to your Stripe balance at checkout — this pays the creator who showcased it their commission.</p>
+    <div id="partnerDropSalesTable"><div class="empty">Loading…</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Brand Opportunities Feed</h2>
+    <p class="sub">The curated feed creators browse in their Deals tab.</p>
+    <input type="text" class="field" id="opBrand" placeholder="Brand name">
+    <div class="row2">
+      <input type="text" class="field" id="opCategory" placeholder="Category (e.g. Travel & Outdoors)">
+      <input type="text" class="field" id="opBudget" placeholder="Budget (e.g. $300–600)">
+    </div>
+    <textarea class="field" id="opDescription" placeholder="Description"></textarea>
+    <button class="btn" onclick="createOpportunity()">Add opportunity</button>
+    <div id="opportunitiesTable" style="margin-top:16px;"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<script>
+  let currentUser = null;
+  let allUsers = [];
+
+  function esc(s){ const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  async function authedFetch(url, body){
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(json.error || 'Request failed');
+    return json;
+  }
+
+  async function init(){
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if(!sessionData.session){ window.location.href = 'signup.html'; return; }
+    currentUser = sessionData.session.user;
+
+    const { data: myProfile } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
+    if(!myProfile || myProfile.role !== 'admin'){
+      document.getElementById('gate').textContent = "You don't have access to this page.";
+      return;
+    }
+
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    loadUsers();
+    loadPartnerProducts();
+    loadReferralPayouts();
+    loadPartnerDropSales();
+    loadOpportunities();
+  }
+
+  /* ---------- USERS ---------- */
+  async function loadUsers(){
+    const { data, error } = await supabaseClient.from('profiles').select('id, username, email, plan, role, stripe_connect_status, paypal_email').order('created_at', { ascending: false });
+    allUsers = data || [];
+    renderUsers();
+  }
+  function renderUsers(){
+    const q = (document.getElementById('userSearch').value || '').toLowerCase();
+    const filtered = allUsers.filter(u => !q || (u.username || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
+    const el = document.getElementById('usersTable');
+    if(!filtered.length){ el.innerHTML = '<div class="empty">No users found.</div>'; return; }
+    el.innerHTML = `<table>
+      <tr><th>User</th><th>Plan</th><th>Role</th><th>Payouts</th><th>Actions</th></tr>
+      ${filtered.map(u => {
+        const canPayout = u.stripe_connect_status === 'active' || !!u.paypal_email;
+        const payoutLabel = [
+          u.stripe_connect_status === 'active' ? 'Stripe ✓' : (u.stripe_connect_status === 'pending' ? 'Stripe (pending)' : ''),
+          u.paypal_email ? 'PayPal ✓' : '',
+        ].filter(Boolean).join(' · ') || 'None connected';
+        return `
+        <tr>
+          <td>${esc(u.username || '(no username)')}<br><span class="empty">${esc(u.email)}</span></td>
+          <td><span class="badge ${u.plan}">${esc(u.plan)}</span></td>
+          <td><span class="badge ${u.role === 'brand' ? 'brand' : ''}">${esc(u.role)}</span></td>
+          <td><span class="empty">${esc(payoutLabel)}</span></td>
+          <td>
+            <select id="plan-${u.id}">
+              <option value="free" ${u.plan==='free'?'selected':''}>Free</option>
+              <option value="pro" ${u.plan==='pro'?'selected':''}>Pro</option>
+              <option value="studio" ${u.plan==='studio'?'selected':''}>Studio</option>
+            </select>
+            <button class="btn-ghost btn btn-sm" onclick="setPlan('${u.id}')">Set</button>
+            ${u.role !== 'brand' ? `<button class="btn-ghost btn btn-sm" onclick="setRole('${u.id}','brand')">Make Brand</button>` : `<button class="btn-ghost btn btn-sm" onclick="setRole('${u.id}','creator')">Revert to Creator</button>`}
+            ${canPayout ? `<button class="btn-ghost btn btn-sm" onclick="sendPayoutPrompt('${u.id}','${esc(u.username||u.email)}')">Send payout</button>` : ''}
+          </td>
+        </tr>
+      `;}).join('')}
+    </table>`;
+  }
+  async function sendPayoutPrompt(userId, label){
+    const gross = prompt(`Gross sale amount in USD for ${label} (before The Lab's 2% commission):`);
+    if(!gross) return;
+    const grossCents = Math.round(parseFloat(gross) * 100);
+    if(!grossCents || grossCents <= 0){ alert('Enter a valid amount.'); return; }
+    const commissionCents = Math.round(grossCents * 0.02);
+    const netCents = grossCents - commissionCents;
+    if(!confirm(`Gross: $${(grossCents/100).toFixed(2)}\nThe Lab's cut (2%): $${(commissionCents/100).toFixed(2)}\n${label} receives: $${(netCents/100).toFixed(2)}\n\nSend this payout?`)) return;
+    try{
+      const result = await authedFetch('/api/admin/send-payout', { creatorId: userId, grossAmountCents: grossCents, currency: 'usd' });
+      alert(`Sent $${(result.amountCents/100).toFixed(2)} to ${label} via ${result.provider} (kept $${(result.commissionCents/100).toFixed(2)} commission).`);
+    } catch(e){ alert(e.message); }
+  }
+  async function setPlan(userId){
+    const plan = document.getElementById('plan-' + userId).value;
+    try{ await authedFetch('/api/admin/set-plan', { targetUserId: userId, plan }); loadUsers(); }
+    catch(e){ alert(e.message); }
+  }
+  async function setRole(userId, role){
+    try{ await authedFetch('/api/admin/set-role', { targetUserId: userId, role }); loadUsers(); }
+    catch(e){ alert(e.message); }
+  }
+
+  /* ---------- PARTNER PRODUCTS ---------- */
+  async function loadPartnerProducts(){
+    const { data, error } = await supabaseClient.from('partner_products').select('*').order('created_at', { ascending: false });
+    const products = data || [];
+
+    document.getElementById('assignProduct').innerHTML = products.filter(p => p.active).map(p =>
+      `<option value="${p.id}">${esc(p.name)} — ${esc(p.brand_name)}</option>`
+    ).join('') || '<option value="">No active products yet</option>';
+
+    const el = document.getElementById('partnerProductsTable');
+    el.innerHTML = products.length ? `<table>
+      <tr><th>Product</th><th>Kind</th><th>Status</th><th></th></tr>
+      ${products.map(p => `
+        <tr>
+          <td>${esc(p.name)}<br><span class="empty">${esc(p.brand_name)} · ${esc(p.price_display||'')}</span></td>
+          <td>${esc(p.kind)}</td>
+          <td>${p.active ? '<span class="badge pro">active</span>' : '<span class="badge free">inactive</span>'}</td>
+          <td><button class="btn-ghost btn btn-sm" onclick="togglePartnerProduct('${p.id}', ${!p.active})">${p.active ? 'Deactivate' : 'Activate'}</button></td>
+        </tr>
+      `).join('')}
+    </table>` : '<div class="empty">No partner products yet.</div>';
+  }
+  async function createPartnerProduct(){
+    const priceDollars = document.getElementById('ppPriceCents').value.trim();
+    const payload = {
+      name: document.getElementById('ppName').value.trim(),
+      brand_name: document.getElementById('ppBrand').value.trim(),
+      kind: document.getElementById('ppKind').value,
+      price_display: document.getElementById('ppPrice').value.trim(),
+      price_cents: priceDollars ? Math.round(parseFloat(priceDollars) * 100) : null,
+      image_url: document.getElementById('ppImage').value.trim(),
+      description: document.getElementById('ppDescription').value.trim(),
+      terms: document.getElementById('ppTerms').value.trim(),
+    };
+    if(!payload.name || !payload.brand_name){ alert('Name and brand are required.'); return; }
+    const { error } = await supabaseClient.from('partner_products').insert(payload);
+    if(error){ alert(error.message); return; }
+    ['ppName','ppBrand','ppPrice','ppPriceCents','ppImage','ppDescription','ppTerms'].forEach(id => document.getElementById(id).value = '');
+    loadPartnerProducts();
+  }
+  async function togglePartnerProduct(id, active){
+    const { error } = await supabaseClient.from('partner_products').update({ active }).eq('id', id);
+    if(error){ alert(error.message); return; }
+    loadPartnerProducts();
+  }
+
+  async function assignPartnerProduct(){
+    const productId = document.getElementById('assignProduct').value;
+    const username = document.getElementById('assignUsername').value.trim().toLowerCase();
+    if(!productId || !username){ alert('Pick a product and enter a username.'); return; }
+
+    const { data: creator, error: lookupErr } = await supabaseClient.from('profiles').select('id').eq('username', username).maybeSingle();
+    if(lookupErr || !creator){ alert('No creator found with that username.'); return; }
+
+    const { error } = await supabaseClient.from('partner_assignments').insert({ product_id: productId, creator_id: creator.id });
+    if(error){ alert(error.message.includes('duplicate') ? 'This creator already has this product assigned.' : error.message); return; }
+    alert('Assigned — the creator has been notified.');
+    document.getElementById('assignUsername').value = '';
+  }
+
+  /* ---------- OPPORTUNITIES ---------- */
+  async function loadOpportunities(){
+    const { data, error } = await supabaseClient.from('opportunities').select('*').order('created_at', { ascending: false });
+    const opps = data || [];
+    const el = document.getElementById('opportunitiesTable');
+    el.innerHTML = opps.length ? `<table>
+      <tr><th>Brand</th><th>Category</th><th></th></tr>
+      ${opps.map(o => `
+        <tr>
+          <td>${esc(o.brand)}<br><span class="empty">${esc(o.budget||'')}</span></td>
+          <td>${esc(o.category)}</td>
+          <td><button class="btn-ghost btn btn-sm" onclick="deleteOpportunity('${o.id}')">Remove</button></td>
+        </tr>
+      `).join('')}
+    </table>` : '<div class="empty">No opportunities posted yet.</div>';
+  }
+  async function createOpportunity(){
+    const payload = {
+      brand: document.getElementById('opBrand').value.trim(),
+      category: document.getElementById('opCategory').value.trim(),
+      budget: document.getElementById('opBudget').value.trim(),
+      description: document.getElementById('opDescription').value.trim(),
+    };
+    if(!payload.brand || !payload.category){ alert('Brand and category are required.'); return; }
+    const { error } = await supabaseClient.from('opportunities').insert(payload);
+    if(error){ alert(error.message); return; }
+    ['opBrand','opCategory','opBudget','opDescription'].forEach(id => document.getElementById(id).value = '');
+    loadOpportunities();
+  }
+  async function deleteOpportunity(id){
+    if(!confirm('Remove this opportunity?')) return;
+    const { error } = await supabaseClient.from('opportunities').delete().eq('id', id);
+    if(error){ alert(error.message); return; }
+    loadOpportunities();
+  }
+
+  /* ---------- REFERRAL PAYOUTS ---------- */
+  async function loadReferralPayouts(){
+    const { data, error } = await supabaseClient
+      .from('referral_commissions')
+      .select('*, profiles!referral_commissions_referrer_id_fkey(username, stripe_connect_status, paypal_email)')
+      .order('created_at', { ascending: false });
+
+    const el = document.getElementById('referralPayoutsTable');
+    if(error){ el.innerHTML = '<div class="empty">Could not load referral payouts.</div>'; return; }
+    if(!data || data.length === 0){ el.innerHTML = '<div class="empty">No referrals yet.</div>'; return; }
+
+    el.innerHTML = `<table>
+      <tr><th>Referrer</th><th>Plan</th><th>Amount</th><th>Status</th><th></th></tr>
+      ${data.map(r => {
+        const referrer = r.profiles;
+        const canPay = referrer && (referrer.stripe_connect_status === 'active' || referrer.paypal_email);
+        return `
+        <tr>
+          <td>${esc(referrer?.username || 'unknown')}</td>
+          <td><span class="empty">${esc(r.plan)}</span></td>
+          <td>$${(r.amount_cents/100).toFixed(2)}</td>
+          <td><span class="badge ${r.status === 'paid' ? 'pro' : ''}">${esc(r.status)}</span></td>
+          <td>${r.status === 'pending'
+            ? (canPay ? `<button class="btn-ghost btn btn-sm" onclick="payReferral('${r.id}', '${esc(referrer?.username)}')">Pay $15</button>` : '<span class="empty">No payout method yet</span>')
+            : ''}</td>
+        </tr>
+      `;}).join('')}
+    </table>`;
+  }
+
+  async function payReferral(id, username){
+    if(!confirm(`Send $15 to ${username}?`)) return;
+    try{
+      await authedFetch('/api/admin/pay-referral', { commissionId: id });
+      alert('Paid.');
+      loadReferralPayouts();
+    } catch(e){ alert(e.message); }
+  }
+
+  /* ---------- PARTNER DROP SALES ---------- */
+  async function loadPartnerDropSales(){
+    const { data, error } = await supabaseClient
+      .from('partner_drop_sales')
+      .select('*, profiles!partner_drop_sales_creator_id_fkey(username, stripe_connect_status, paypal_email), partner_products!partner_drop_sales_product_id_fkey(name)')
+      .order('created_at', { ascending: false });
+
+    const el = document.getElementById('partnerDropSalesTable');
+    if(error){ el.innerHTML = '<div class="empty">Could not load partner drop sales.</div>'; return; }
+    if(!data || data.length === 0){ el.innerHTML = '<div class="empty">No sales yet.</div>'; return; }
+
+    el.innerHTML = `<table>
+      <tr><th>Product</th><th>Creator</th><th>Sale</th><th>Commission</th><th>Status</th><th></th></tr>
+      ${data.map(s => {
+        const creator = s.profiles;
+        const canPay = creator && (creator.stripe_connect_status === 'active' || creator.paypal_email);
+        return `
+        <tr>
+          <td>${esc(s.partner_products?.name || 'Unknown product')}</td>
+          <td>${esc(creator?.username || 'unknown')}</td>
+          <td>$${(s.price_cents/100).toFixed(2)}</td>
+          <td>$${(s.commission_cents/100).toFixed(2)}</td>
+          <td><span class="badge ${s.status === 'paid' ? 'pro' : ''}">${esc(s.status)}</span></td>
+          <td>${s.status === 'pending'
+            ? (canPay ? `<button class="btn-ghost btn btn-sm" onclick="payPartnerCommission('${s.id}', '${esc(creator?.username)}')">Pay commission</button>` : '<span class="empty">No payout method yet</span>')
+            : ''}</td>
+        </tr>
+      `;}).join('')}
+    </table>`;
+  }
+
+  async function payPartnerCommission(id, username){
+    if(!confirm(`Pay ${username}'s commission on this sale?`)) return;
+    try{
+      await authedFetch('/api/admin/pay-partner-commission', { saleId: id });
+      alert('Paid.');
+      loadPartnerDropSales();
+    } catch(e){ alert(e.message); }
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /landing.html
+Allow: /how-it-works.html
+Allow: /signup.html
+Allow: /portfolio.html
+Allow: /mediakit.html
+Allow: /privacy.html
+Allow: /terms.html
+
+# Private, account-specific pages shouldn't be indexed
+Disallow: /dashboard.html
+Disallow: /editor.html
+Disallow: /onboarding.html
+Disallow: /admin.html
+Disallow: /brand-dashboard.html
+Disallow: /reset-password.html
+Disallow: /api/
+
+Sitemap: https://the-lab-iwe2.vercel.app/sitemap.xml

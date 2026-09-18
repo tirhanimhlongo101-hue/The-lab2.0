@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator site</title>
+<meta name="description" content="A creator's website, brand partnerships, and portfolio — built with The Lab.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,800;0,9..144,900;1,9..144,500&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#181512; --bg-2:#211D18; --bg-3:#2A241D; --ink:#F8F4EC;
+    --accent:#FFC93C; --dim:rgba(248,244,236,0.6); --line:rgba(248,244,236,0.14);
+    --font-head:'Fraunces',serif; --font-body:'IBM Plex Sans',sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:var(--font-body); min-height:100vh; -webkit-font-smoothing:antialiased; transition:background .3s;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px;}
+  .state{text-align:center; padding:120px 24px; color:var(--dim);}
+  .state a{color:var(--accent);}
+  img{max-width:100%; display:block;}
+  a{color:inherit;}
+
+  nav{display:flex; align-items:center; justify-content:space-between; padding:22px 0; position:sticky; top:0; background:var(--bg); z-index:30; border-bottom:1px solid transparent;}
+  nav.scrolled{border-bottom-color:var(--line);}
+  .nav-logo{font-family:var(--font-head); font-weight:800; font-size:19px;}
+  .nav-links{display:flex; align-items:center; gap:22px;}
+  .nav-links a{color:var(--dim); text-decoration:none; font-size:12.5px; letter-spacing:0.4px; text-transform:uppercase;}
+  .nav-links a:hover{color:var(--ink);}
+  .btn{display:inline-flex; align-items:center; gap:6px; padding:11px 20px; border-radius:8px; font-size:13px; font-weight:600; border:none; cursor:pointer; background:var(--accent); color:var(--bg); text-decoration:none; white-space:nowrap;}
+  .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--ink);}
+
+  main{padding-bottom:20px;}
+  section{padding:52px 0; border-bottom:1px solid var(--line); scroll-margin-top:70px;}
+  section:last-of-type{border-bottom:none;}
+  .section-label{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1.5px; color:var(--accent); text-transform:uppercase; margin-bottom:16px;}
+  .empty{color:var(--dim); font-size:13.5px;}
+
+  /* HERO */
+  .hero{display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center; padding:44px 0 54px;}
+  .eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:1.5px; color:var(--accent); text-transform:uppercase; margin-bottom:16px;}
+  .headline{font-family:var(--font-head); font-weight:800; font-size:clamp(32px,5.2vw,48px); line-height:1.06; margin-bottom:18px; white-space:pre-line;}
+  .hero-sub{color:var(--dim); font-size:15.5px; line-height:1.6; max-width:440px; margin-bottom:26px;}
+  .hero-photo{width:100%; aspect-ratio:4/5; border-radius:20px; overflow:hidden; background:linear-gradient(155deg,var(--bg-3),var(--bg-2)); display:flex; align-items:center; justify-content:center;}
+  .hero-photo img{width:100%; height:100%; object-fit:cover;}
+  .hero-photo .fallback{font-family:var(--font-head); font-weight:800; font-size:72px; color:var(--accent); opacity:0.45;}
+
+  /* STATS */
+  .stats-row{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  .stat-item{text-align:center; padding:14px 4px; background:var(--bg-2); border:1px solid var(--line); border-radius:12px;}
+  .stat-num{font-family:var(--font-head); font-weight:800; font-size:23px;}
+  .stat-label{font-size:10.5px; color:var(--dim); text-transform:uppercase; letter-spacing:0.6px; margin-top:3px;}
+
+  /* TEXT BLOCK (story/about/contact/guides/custom) */
+  .text-block h2{font-family:var(--font-head); font-weight:700; font-size:clamp(22px,3.5vw,30px); margin-bottom:14px; max-width:560px;}
+  .text-block p{color:var(--dim); font-size:15px; line-height:1.7; max-width:560px; white-space:pre-line;}
+  .text-block .btn{margin-top:22px;}
+
+  /* PARTNERS */
+  .partner-row{display:flex; flex-wrap:wrap; gap:16px 32px; align-items:center;}
+  .partner-name{font-family:var(--font-head); font-weight:700; font-size:18px; opacity:0.85;}
+
+  /* GRIDS (featured / shop) */
+  .grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:14px;}
+  .grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px;}
+  .tile-card{border-radius:14px; overflow:hidden; background:var(--bg-2); border:1px solid var(--line); text-decoration:none; color:var(--ink); display:block;}
+  .tile-thumb{aspect-ratio:1/1; position:relative; display:flex; align-items:center; justify-content:center;}
+  .tile-thumb img{width:100%; height:100%; object-fit:cover; position:absolute; inset:0;}
+  .tile-play{width:38px; height:38px; border-radius:50%; background:rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:1;}
+  .tile-info{padding:12px 14px;}
+  .tile-info b{font-family:var(--font-head); font-size:13.5px; display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .tile-info span{font-size:11.5px; color:var(--dim);}
+  .tile-info span.price{color:var(--accent);}
+
+  /* CONNECT */
+  .connect-row{display:flex; flex-wrap:wrap; gap:26px;}
+  .connect-item{display:flex; align-items:center; gap:8px; text-decoration:none; font-size:13px;}
+  .connect-item svg{width:18px; height:18px; opacity:0.85;}
+
+  .footer-cta{text-align:center; padding:40px 0 60px;}
+  .footer-cta p{color:var(--dim); font-size:13px; margin-bottom:14px;}
+
+  @media(max-width:640px){
+    .hero{grid-template-columns:1fr; gap:24px;}
+    .hero-photo{order:-1; aspect-ratio:16/11;}
+    .stats-row{grid-template-columns:repeat(2,1fr); gap:10px;}
+    .grid2{grid-template-columns:repeat(2,1fr);}
+    .grid4{grid-template-columns:repeat(2,1fr);}
+    .nav-links{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="loading" class="state">Loading…</div>
+<div id="notfound" class="state" style="display:none;">
+  This page doesn't exist yet.<br><br>
+  <a href="onboarding.html">Build your own creator website →</a>
+</div>
+
+<div id="content" style="display:none;">
+  <div class="wrap">
+    <nav id="siteNav">
+      <div class="nav-logo" id="navLogo">—</div>
+      <div class="nav-links" id="navLinks"></div>
+      <a href="#" id="navCta" class="btn">Work with me →</a>
+    </nav>
+  </div>
+  <main class="wrap" id="sections"></main>
+  <div class="wrap">
+    <div class="footer-cta" id="footerCta">
+      <p>Like this site?</p>
+      <a href="onboarding.html" class="btn btn-ghost">Build your own creator website →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Converts a Postgres row (snake_case columns) into the same shape
+  // every render function below already expects (camelCase) — this is
+  // the only place that needs to know about database column names.
+  function mapProfileRow(row){
+    return {
+      username: row.username,
+      displayName: row.display_name,
+      bio: row.bio,
+      goal: row.goal,
+      niche: row.niche,
+      avatarImage: row.avatar_image,
+      platforms: row.platforms || [],
+      stats: row.stats || {},
+      social: row.social || {},
+      mediaKit: row.media_kit || {},
+      featuredWork: row.featured_work || [],
+      shopPicks: row.shop_picks || [],
+      manualPartnerships: row.manual_partnerships || [],
+      website: row.website,
+      createdAt: row.created_at,
+      plan: row.plan || 'free',
+    };
+  }
+  function mapDealPublicRow(row){
+    // deals_public only ever contains rows that are already public
+    // (a database trigger guarantees this), so isPublic is always true here.
+    return { id: row.id, brand: row.brand, platform: row.platform, createdAt: row.created_at, isPublic: true };
+  }
+
+  const ICONS = {
+    instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z"/></svg>',
+    youtube: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>',
+    twitter: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.6L23.3 22h-6.9l-5.4-6.6L4.7 22H1.6l8-9.2L1 2h7l4.9 6.1L18.9 2z"/></svg>',
+    email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>'
+  };
+
+  function esc(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function safeUrl(u){
+    if(!u) return '';
+    try{
+      const parsed = new URL(String(u), window.location.href);
+      if(['http:','https:','mailto:'].includes(parsed.protocol)) return parsed.href;
+    } catch(e){}
+    return '';
+  }
+  function safeColor(c){
+    return /^#[0-9a-fA-F]{6}$/.test(String(c || '')) ? c : '#2A241D';
+  }
+  function safeId(v){
+    return String(v || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+  }
+
+  function analyzeTerms(text, amount){
+    const flags = [];
+    const t = (text || '').toLowerCase();
+    if(!amount || Number(amount) <= 0) flags.push('No payment amount specified');
+    if(/unlimited/.test(t) && /(usage|rights|use)/.test(t)) flags.push('Unlimited usage rights');
+    if(/forever|in perpetuity/.test(t)) flags.push('Usage rights with no end date');
+    if(!/exclusiv/.test(t)) flags.push('No exclusivity limit mentioned');
+    const hasNumbers = /\d/.test(t);
+    if(t.trim().length < 25 || !hasNumbers) flags.push('Vague or uncounted deliverables');
+    return flags;
+  }
+
+  function defaultWebsite(){
+    return {
+      theme: { mode:'dark', bg:'#181512', bg2:'#211D18', ink:'#F8F4EC', accent:'#FFC93C', font:'serif' },
+      sections: [
+        { id:'s1', type:'hero', visible:true, eyebrow:'Content Creator & Entrepreneur', headline:'Storytelling.\nBranding.\nBuilding impact.', subtitle:'I create content that connects brands to culture and turns ideas into influence.', image:'' },
+        { id:'s2', type:'stats', visible:true, heading:'' },
+        { id:'s3', type:'story', visible:true, heading:'My Story', body:'I started making content because I loved the craft of it \u2014 the editing, the storytelling, the small details most people scroll past. What began as a hobby turned into a full creative business, and now I get to work with brands I actually believe in.' },
+        { id:'s4', type:'partnerships', visible:true, heading:'Brand Partnerships' },
+        { id:'s5', type:'featured', visible:true, heading:'Featured Work' },
+        { id:'s6', type:'shop', visible:true, heading:'Shop My Picks' },
+        { id:'s7', type:'about', visible:true, heading:'About', body:'' },
+        { id:'s8', type:'contact', visible:true, heading:'Work With Me', body:'I partner with a small number of brands I genuinely use and trust. If that sounds like you, reach out below.' }
+      ]
+    };
+  }
+
+  function tileHTML(item, kind){
+    const style = `style="background:linear-gradient(155deg, ${safeColor(item.color)}, var(--bg));"`;
+    const img = item.image ? `<img src="${safeUrl(item.image)}" alt="" onerror="this.remove()">` : '';
+    const play = kind === 'work' ? '<div class="tile-play"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="6,4 20,12 6,20"/></svg></div>' : '';
+    return `<div class="tile-thumb" ${style}>${img}${play}</div>`;
+  }
+
+  function sectionWrap(id, label, inner){
+    return `<section id="${id}">${label ? `<div class="section-label">${esc(label)}</div>` : ''}${inner}</section>`;
+  }
+
+  function renderHero(sec, profile){
+    const name = profile.displayName || profile.username;
+    const initial = esc(name.charAt(0).toUpperCase());
+    const photo = sec.image
+      ? `<img src="${safeUrl(sec.image)}" alt="${esc(name)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="fallback" style="display:none;">${initial}</div>`
+      : `<div class="fallback">${initial}</div>`;
+    return `<section id="sec-hero" style="padding-top:8px;">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">${esc(sec.eyebrow || '')}</div>
+          <h1 class="headline">${esc(sec.headline || name)}</h1>
+          <p class="hero-sub">${esc(sec.subtitle || '')}</p>
+          <a href="#sec-contact" class="btn">Work with me →</a>
+        </div>
+        <div class="hero-photo">${photo}</div>
+      </div>
+    </section>`;
+  }
+
+  function renderStats(sec, profile, deals){
+    const s = profile.stats || {};
+    const items = [
+      { num: s.followers || '—', label: 'Followers' },
+      { num: s.views || '—', label: 'Total views' },
+      { num: deals.length, label: 'Brand deals' },
+      { num: s.years || '—', label: 'Years creating' },
+    ];
+    const html = `<div class="stats-row">${items.map(i => `<div class="stat-item"><div class="stat-num">${esc(String(i.num))}</div><div class="stat-label">${i.label}</div></div>`).join('')}</div>`;
+    return sectionWrap(sec.id, sec.heading, html);
+  }
+
+  function renderTextBlock(sec, profile, isContact){
+    let extra = '';
+    if(isContact){
+      const social = profile.social || {};
+      const links = [];
+      if(social.instagram) links.push({ key:'instagram', label:'Instagram', href: social.instagram });
+      if(social.tiktok) links.push({ key:'tiktok', label:'TikTok', href: social.tiktok });
+      if(social.youtube) links.push({ key:'youtube', label:'YouTube', href: social.youtube });
+      if(social.twitter) links.push({ key:'twitter', label:'X / Twitter', href: social.twitter });
+      if(social.email) links.push({ key:'email', label:'Email', href: 'mailto:' + social.email });
+      extra = links.length
+        ? `<div class="connect-row" style="margin-top:24px;">${links.map(l => `<a class="connect-item" href="${safeUrl(l.href)}" target="_blank" rel="noopener">${ICONS[l.key]}${l.label}</a>`).join('')}</div>`
+        : `<div class="empty" style="margin-top:16px;">No contact links added yet.</div>`;
+    }
+    const html = `<div class="text-block"><h2>${esc(sec.heading || '')}</h2><p>${esc(sec.body || '')}</p>${extra}</div>`;
+    return sectionWrap(sec.id, null, html);
+  }
+
+  function renderPartnerships(sec, deals, profile){
+    const publicBrands = [...new Set(deals.filter(d => d.isPublic !== false).map(d => d.brand))];
+    const manual = profile.manualPartnerships || [];
+    const all = [...new Set([...publicBrands, ...manual])];
+    const html = `<div class="partner-row">${all.length ? all.map(b => `<div class="partner-name">${esc(b)}</div>`).join('') : '<div class="empty">No public brand partnerships yet.</div>'}</div>`;
+    return sectionWrap(sec.id, sec.heading, html);
+  }
+
+  function renderFeatured(sec, profile){
+    const work = profile.featuredWork || [];
+    const html = `<div class="grid2">${work.length ? work.map(w => `
+      <div class="tile-card">${tileHTML(w, 'work')}<div class="tile-info"><b>${esc(w.title)}</b><span>${esc(w.subtitle || '')}</span></div></div>`).join('') : '<div class="empty">No featured work added yet.</div>'}</div>`;
+    return sectionWrap(sec.id, sec.heading, html);
+  }
+
+  const SHOP_TYPE_LABEL = { own: 'Yours', affiliate: 'Affiliate', partner: 'Lab partner' };
+
+  function renderShop(sec, profile){
+    const picks = profile.shopPicks || [];
+    const html = `<div class="grid4">${picks.length ? picks.map(p => {
+      const inner = tileHTML(p, 'shop') + `<div class="tile-info"><span style="font-size:9.5px; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); display:block; margin-bottom:2px;">${SHOP_TYPE_LABEL[p.type] || 'Yours'}</span><b>${esc(p.name)}</b><span class="price">${esc(p.price || '')}</span></div>`;
+      if(p.sellOnLab && p.priceCents > 0){
+        return `<button type="button" class="tile-card" style="width:100%; text-align:left; cursor:pointer; border:none;" onclick="buyShopItem('${esc(p.creatorId)}','${esc(p.id)}',this)">${inner}</button>`;
+      }
+      if(p.isPartnerDrop && p.priceCents > 0){
+        return `<button type="button" class="tile-card" style="width:100%; text-align:left; cursor:pointer; border:none;" onclick="buyPartnerDrop('${esc(p.creatorId)}','${esc(p.productId)}',this)">${inner}</button>`;
+      }
+      if(!p.url){
+        // No real destination for this tile (e.g. a Lab partner drop with
+        // no purchase flow of its own yet) — render it as plain, honest
+        // information rather than a link that quietly does nothing when
+        // clicked, which reads as a bug to a visitor.
+        return `<div class="tile-card" style="cursor:default;">${inner}</div>`;
+      }
+      return `<a class="tile-card" href="${safeUrl(p.url)}" target="_blank" rel="noopener">${inner}</a>`;
+    }).join('') : '<div class="empty">No products added yet.</div>'}</div>`;
+    return sectionWrap(sec.id, sec.heading, html);
+  }
+
+  async function buyShopItem(creatorId, itemId, btn){
+    const original = btn.style.opacity;
+    btn.style.opacity = '0.6';
+    try{
+      const res = await fetch('/api/stripe/create-shop-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorId, itemId }),
+      });
+      const json = await res.json();
+      if(res.ok && json.url){ window.location.href = json.url; return; }
+      alert(json.error || 'Could not start checkout.');
+    } catch(e){
+      alert('Could not start checkout — try again.');
+    }
+    btn.style.opacity = original;
+  }
+
+  async function buyPartnerDrop(creatorId, productId, btn){
+    const original = btn.style.opacity;
+    btn.style.opacity = '0.6';
+    try{
+      const res = await fetch('/api/stripe/create-partner-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creatorId, productId }),
+      });
+      const json = await res.json();
+      if(res.ok && json.url){ window.location.href = json.url; return; }
+      alert(json.error || 'Could not start checkout.');
+    } catch(e){
+      alert('Could not start checkout — try again.');
+    }
+    btn.style.opacity = original;
+  }
+
+  async function checkOrderConfirmation(){
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('order') !== 'success') return;
+    const sessionId = params.get('session_id');
+    if(!sessionId) return;
+
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:999; background:#181512; color:#F8F4EC; border:1px solid #FFC93C; border-radius:12px; padding:16px 20px; max-width:420px; box-shadow:0 8px 30px rgba(0,0,0,0.3); font-family:sans-serif; font-size:14px;';
+    banner.textContent = 'Payment received — loading your order…';
+    document.body.appendChild(banner);
+
+    for(let i = 0; i < 6; i++){
+      try{
+        const res = await fetch('/api/stripe/shop-order-lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+        if(res.ok){
+          const order = await res.json();
+          banner.innerHTML = `<b>Thanks for your purchase — ${esc(order.itemName)}!</b><br>` + (
+            order.kind === 'digital' && order.deliveryValue
+              ? `Get it here: <a href="${safeUrl(order.deliveryValue)}" target="_blank" rel="noopener" style="color:#FFC93C;">${esc(order.deliveryValue)}</a>`
+              : order.kind === 'partner_drop'
+              ? `You'll get a confirmation email with next steps.`
+              : `The creator will follow up on shipping — they've been notified.`
+          );
+          return;
+        }
+      } catch(e){ /* retry below */ }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    banner.textContent = 'Payment received — your confirmation is on its way (check back in a moment).';
+  }
+
+  function renderSection(sec, profile, deals){
+    if(!sec.visible) return '';
+    const id = 'sec-' + sec.id;
+    switch(sec.type){
+      case 'hero': return renderHero(sec, profile);
+      case 'stats': { const s = Object.assign({}, sec, { id }); return renderStats(s, profile, deals); }
+      case 'partnerships': { const s = Object.assign({}, sec, { id }); return renderPartnerships(s, deals, profile); }
+      case 'featured': { const s = Object.assign({}, sec, { id }); return renderFeatured(s, profile); }
+      case 'shop': { const s = Object.assign({}, sec, { id }); return renderShop(s, profile); }
+      case 'contact': { const s = Object.assign({}, sec, { id }); return renderTextBlock(s, profile, true); }
+      default: { const s = Object.assign({}, sec, { id }); return renderTextBlock(s, profile, false); }
+    }
+  }
+
+  function applyTheme(theme){
+    const t = theme || {};
+    const root = document.documentElement.style;
+    root.setProperty('--bg', t.bg || '#181512');
+    root.setProperty('--bg-2', t.bg2 || '#211D18');
+    root.setProperty('--bg-3', t.bg3 || t.bg2 || '#2A241D');
+    root.setProperty('--ink', t.ink || '#F8F4EC');
+    root.setProperty('--accent', t.accent || '#FFC93C');
+    root.setProperty('--font-head', t.font === 'sans' ? "'IBM Plex Sans',sans-serif" : "'Fraunces',serif");
+  }
+
+  async function load(){
+    const params = new URLSearchParams(window.location.search);
+    const username = (params.get('u') || '').toLowerCase().trim();
+
+    if(!username){
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('notfound').style.display = 'block';
+      return;
+    }
+
+    const { data: profileRow, error: profileErr } = await supabaseClient
+      .from('profiles_public')
+      .select('*')
+      .eq('username', username)
+      .maybeSingle();
+
+    if(profileErr || !profileRow){
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('notfound').style.display = 'block';
+      return;
+    }
+
+    const profile = mapProfileRow(profileRow);
+    profile.shopPicks = (profile.shopPicks || []).map(p => ({ ...p, creatorId: profileRow.id }));
+
+    const { data: dealRows } = await supabaseClient
+      .from('deals_public')
+      .select('*')
+      .eq('user_id', profileRow.id)
+      .order('created_at', { ascending: false });
+
+    const deals = (dealRows || []).map(mapDealPublicRow);
+
+    const { data: partnerRows } = await supabaseClient
+      .from('partner_assignments')
+      .select('*, partner_products(*)')
+      .eq('creator_id', profileRow.id)
+      .eq('status', 'accepted');
+
+    const partnerPicks = (partnerRows || [])
+      .filter(a => a.partner_products && a.partner_products.active)
+      .map(a => ({
+        name: a.partner_products.name, price: a.partner_products.price_display,
+        image: a.partner_products.image_url, color: '#3A2E4A', url: '', type: 'partner',
+        productId: a.partner_products.id, priceCents: a.partner_products.price_cents || 0,
+        isPartnerDrop: true, creatorId: profileRow.id,
+      }));
+    profile.shopPicks = [...(profile.shopPicks || []), ...partnerPicks];
+
+    const website = profile.website || defaultWebsite();
+    // Section ids come from a free-form JSON column with no structure
+    // validation — normalize them here so every place that uses sec.id
+    // in an HTML attribute (nav links, element ids) is automatically safe,
+    // rather than relying on escaping it correctly at every call site.
+    website.sections = (website.sections || []).map((s, i) => Object.assign({}, s, { id: safeId(s.id) || ('s' + i) }));
+    applyTheme(website.theme);
+
+    // The "Build your own creator website" plug is how The Lab markets
+    // itself on every free page — it's genuinely part of what Pro/Studio
+    // are paying to remove, so it only shows for Free creators.
+    const footerCta = document.getElementById('footerCta');
+    if(footerCta) footerCta.style.display = (profile.plan === 'free') ? 'block' : 'none';
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+
+    const name = profile.displayName || profile.username;
+    document.title = name + ' — Creator Site';
+    const descTag = document.querySelector('meta[name="description"]');
+    if(descTag) descTag.setAttribute('content', (profile.bio || (name + '\u2019s creator page, built with The Lab.')).slice(0, 160));
+    document.getElementById('navLogo').textContent = name;
+
+    const visibleSections = (website.sections || []).filter(s => s.visible && s.type !== 'hero');
+    document.getElementById('navLinks').innerHTML = visibleSections.slice(0, 5).map(s =>
+      `<a href="#sec-${s.id}">${esc(s.heading || s.type)}</a>`
+    ).join('');
+    const contactSec = (website.sections || []).find(s => s.type === 'contact');
+    document.getElementById('navCta').href = contactSec ? '#sec-' + contactSec.id : '#';
+
+    document.getElementById('sections').innerHTML = (website.sections || [])
+      .map(sec => renderSection(sec, profile, deals)).join('');
+
+    window.addEventListener('scroll', () => {
+      document.getElementById('siteNav').classList.toggle('scrolled', window.scrollY > 8);
+    });
+  }
+
+  load();
+  checkOrderConfirmation();
+</script>
+</body>
+</html>

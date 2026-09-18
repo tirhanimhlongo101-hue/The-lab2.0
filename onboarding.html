@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Set up your page — The Lab</title>
+<meta name="description" content="A few quick things, then your page is live.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<style>
+  :root{
+    --ink:#181512; --ink-2:#211D18; --paper:#F8F4EC; --gold:#FFC93C;
+    --line:rgba(248,244,236,0.14); --dim:rgba(248,244,236,0.6);
+    --error:#E4634F; --signal:#3FA679;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--ink); color:var(--paper); font-family:'IBM Plex Sans', sans-serif; min-height:100vh; display:flex; flex-direction:column; -webkit-font-smoothing:antialiased;}
+  header{padding:26px 28px;}
+  .logo{display:flex; align-items:center; gap:8px; font-family:'Fraunces', serif; font-weight:800; font-size:20px; text-decoration:none; color:var(--paper); width:fit-content;}
+  .logo-mark{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; background:var(--gold); border-radius:8px; color:var(--ink); font-family:'Fraunces',serif; font-weight:800; flex-shrink:0;}
+  main{flex:1; display:flex; align-items:flex-start; justify-content:center; padding:20px 20px 60px;}
+  .card{width:100%; max-width:460px;}
+  .step-dots{display:flex; gap:6px; margin-bottom:24px;}
+  .dot{height:4px; flex:1; border-radius:2px; background:var(--line);}
+  .dot.done{background:var(--gold);}
+  h1{font-family:'Fraunces', serif; font-weight:800; font-size:26px; margin-bottom:6px;}
+  .sub{color:var(--dim); font-size:14px; margin-bottom:28px;}
+  label{display:block; font-size:12.5px; color:var(--dim); margin-bottom:6px; margin-top:16px;}
+  label:first-of-type{margin-top:0;}
+  .field{width:100%; background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:13px 15px; color:var(--paper); font-size:15px; outline:none;}
+  .field::placeholder{color:var(--dim);}
+  .field:focus{border-color:var(--gold);}
+  .prefix-field{display:flex; align-items:center; background:var(--ink-2); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .prefix-field span{padding:13px 0 13px 15px; color:var(--dim); font-size:14px; font-family:'IBM Plex Mono', monospace;}
+  .prefix-field input{border:none; background:transparent; flex:1;}
+  .hint{font-size:12px; margin-top:6px; color:var(--dim);}
+  .hint.ok{color:var(--signal);}
+  .hint.bad{color:var(--error);}
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{padding:9px 14px; border-radius:20px; border:1px solid var(--line); background:var(--ink-2); font-size:13px; cursor:pointer; user-select:none; color:var(--paper);}
+  .chip.active{background:var(--gold); color:var(--ink); border-color:var(--gold); font-weight:600;}
+  select.field{appearance:none;}
+  .btn{width:100%; padding:14px; border-radius:10px; font-size:15px; font-weight:700; border:1px solid #FFFFFF; cursor:pointer; background:#FFFFFF; color:var(--ink); margin-top:28px;}
+  .btn:disabled{opacity:0.5; cursor:not-allowed;}
+  .message{padding:12px 14px; border-radius:10px; font-size:13.5px; margin-top:16px; display:none;}
+  .message.error{background:rgba(228,99,79,0.12); border:1px solid rgba(228,99,79,0.4); color:var(--error); display:block;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="landing.html" class="logo"><span class="logo-mark">L</span>The Lab</a>
+</header>
+
+<main>
+  <div class="card">
+    <div class="step-dots"><div class="dot done"></div><div class="dot done"></div><div class="dot"></div></div>
+    <h1>Set up your page</h1>
+    <p class="sub">This becomes your public link — you can change everything except your username later.</p>
+
+    <label for="usernameField">Choose a username</label>
+    <div class="prefix-field">
+      <span>thelab.me/</span>
+      <input type="text" class="field" id="usernameField" placeholder="yourname" maxlength="30" autocomplete="off" oninput="onUsernameInput()">
+    </div>
+    <p class="hint" id="usernameHint">3–30 characters — lowercase letters, numbers, underscores and periods only.</p>
+
+    <label for="displayNameField">Display name</label>
+    <input type="text" class="field" id="displayNameField" placeholder="How brands and fans should see your name" maxlength="80">
+
+    <label for="goalField">What are you here for, mostly?</label>
+    <select class="field" id="goalField">
+      <option value="deals">Landing brand deals</option>
+      <option value="portfolio">Building a portfolio site</option>
+      <option value="both">Both</option>
+    </select>
+
+    <label for="nicheField">Your niche</label>
+    <select class="field" id="nicheField">
+      <option>Fashion & Beauty</option>
+      <option>Travel & Outdoors</option>
+      <option>Fitness & Health</option>
+      <option>Food & Beverage</option>
+      <option>Tech & Productivity</option>
+      <option>Home & Lifestyle</option>
+      <option>Other</option>
+    </select>
+
+    <label>Where do you post?</label>
+    <div class="chip-row" id="platformChips">
+      <div class="chip" data-p="instagram" onclick="togglePlatform(this)">Instagram</div>
+      <div class="chip" data-p="tiktok" onclick="togglePlatform(this)">TikTok</div>
+      <div class="chip" data-p="youtube" onclick="togglePlatform(this)">YouTube</div>
+      <div class="chip" data-p="twitter" onclick="togglePlatform(this)">X / Twitter</div>
+    </div>
+
+    <div class="message" id="messageBox"></div>
+    <button class="btn" id="finishBtn" onclick="finishOnboarding()">Take me to my dashboard</button>
+  </div>
+</main>
+
+<script>
+  let currentUser = null;
+  let usernameAvailable = false;
+  let usernameCheckTimer = null;
+  const USERNAME_RE = /^[a-z0-9_.]{3,30}$/;
+
+  function togglePlatform(el){ el.classList.toggle('active'); }
+
+  function selectedPlatforms(){
+    return Array.from(document.querySelectorAll('#platformChips .chip.active')).map(c => c.dataset.p);
+  }
+
+  function setUsernameHint(text, cls){
+    const el = document.getElementById('usernameHint');
+    el.textContent = text;
+    el.className = 'hint' + (cls ? ' ' + cls : '');
+  }
+
+  function onUsernameInput(){
+    const raw = document.getElementById('usernameField').value.trim().toLowerCase();
+    document.getElementById('usernameField').value = raw;
+    usernameAvailable = false;
+    clearTimeout(usernameCheckTimer);
+
+    if(!raw){ setUsernameHint('3–30 characters — lowercase letters, numbers, underscores and periods only.'); return; }
+    if(!USERNAME_RE.test(raw)){ setUsernameHint('Only lowercase letters, numbers, underscores and periods, 3–30 characters.', 'bad'); return; }
+
+    setUsernameHint('Checking availability…');
+    usernameCheckTimer = setTimeout(async () => {
+      const { data, error } = await supabaseClient
+        .from('profiles_public')
+        .select('username')
+        .eq('username', raw)
+        .maybeSingle();
+      if(error){ setUsernameHint('Could not check availability — try again.', 'bad'); return; }
+      if(data){ setUsernameHint('That username is taken.', 'bad'); }
+      else { usernameAvailable = true; setUsernameHint('Available ✓', 'ok'); }
+    }, 400);
+  }
+
+  function showMessage(text){
+    const box = document.getElementById('messageBox');
+    box.textContent = text;
+    box.className = 'message error';
+  }
+
+  async function finishOnboarding(){
+    const username = document.getElementById('usernameField').value.trim().toLowerCase();
+    const displayName = document.getElementById('displayNameField').value.trim();
+    const goal = document.getElementById('goalField').value;
+    const niche = document.getElementById('nicheField').value;
+    const platforms = selectedPlatforms();
+
+    if(!USERNAME_RE.test(username)){ showMessage('Choose a valid username first.'); return; }
+    if(!usernameAvailable){ showMessage("That username isn't available — try another."); return; }
+    if(!displayName){ showMessage('Add a display name.'); return; }
+
+    const btn = document.getElementById('finishBtn');
+    btn.disabled = true;
+    btn.textContent = 'Setting up…';
+
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({
+        username,
+        display_name: displayName,
+        goal,
+        niche,
+        platforms,
+      })
+      .eq('id', currentUser.id);
+
+    if(error){
+      // Most likely someone else grabbed the username in the last few
+      // seconds (there's a unique constraint at the database level, so
+      // this can never actually create a duplicate — worst case is this
+      // friendly retry).
+      showMessage(error.message.includes('duplicate') || error.message.includes('unique')
+        ? 'That username was just taken — try another.'
+        : (error.message || 'Something went wrong — try again.'));
+      btn.disabled = false;
+      btn.textContent = 'Take me to my dashboard';
+      return;
+    }
+
+    window.location.href = 'dashboard.html';
+  }
+
+  (async () => {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if(!sessionData.session){ window.location.href = 'signup.html'; return; }
+    currentUser = sessionData.session.user;
+
+    // Already finished onboarding? Skip straight to the dashboard.
+    const { data: profileRow } = await supabaseClient
+      .from('profiles')
+      .select('username')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+    if(profileRow && profileRow.username){ window.location.href = 'dashboard.html'; return; }
+
+    if(currentUser.email){
+      document.getElementById('displayNameField').value = currentUser.email.split('@')[0];
+    }
+  })();
+</script>
+</body>
+</html>

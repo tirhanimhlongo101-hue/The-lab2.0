@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — The Lab</title>
+<meta name="description" content="How The Lab collects, uses, and protects your data.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --ink:#181512; --ink-2:#211D18; --paper:#F8F4EC; --gold:#FFC93C; --line:rgba(248,244,236,0.14); --dim:rgba(248,244,236,0.65); }
+  *{box-sizing:border-box;}
+  body{background:var(--ink); color:var(--paper); font-family:'IBM Plex Sans',sans-serif; line-height:1.65; margin:0;}
+  .wrap{max-width:720px; margin:0 auto; padding:50px 24px 90px;}
+  a.back{color:var(--dim); text-decoration:none; font-size:14px;}
+  h1{font-family:'Fraunces',serif; font-weight:800; font-size:30px; margin:24px 0 6px;}
+  .updated{color:var(--dim); font-size:13px; margin-bottom:36px;}
+  h2{font-family:'Fraunces',serif; font-weight:700; font-size:19px; margin:36px 0 12px;}
+  p, li{color:rgba(248,244,236,0.85); font-size:15px; margin-bottom:12px;}
+  ul{padding-left:20px;}
+  strong{color:var(--paper);}
+  .note{background:var(--ink-2); border:1px solid var(--line); border-radius:10px; padding:14px 16px; font-size:13.5px; color:var(--dim); margin:20px 0;}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px;}
+  th, td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{color:var(--dim); font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="landing.html">← The Lab</a>
+  <h1>Privacy Policy</h1>
+  <p class="updated">Last updated: this is a living document that will be reviewed by a lawyer before this product handles payments or scales beyond early users.</p>
+
+  <div class="note">
+    This describes exactly what The Lab actually collects and does today — not generic boilerplate. If a feature described here doesn't exist yet in the live product, it's not covered by this policy until it does.
+  </div>
+
+  <h2>Who this is</h2>
+  <p>The Lab is an early-stage, independently operated product. [Operator name and contact email to be added here before public launch — this needs to be a real identifiable person or entity, which only you can fill in.]</p>
+
+  <h2>What we collect</h2>
+  <table>
+    <tr><th>Data</th><th>Why</th></tr>
+    <tr><td>Email address, password</td><td>Creating and securing your account (handled by Supabase Auth — we never see or store your raw password)</td></tr>
+    <tr><td>Display name, bio, niche, goal, platforms</td><td>Building your public creator page</td></tr>
+    <tr><td>Avatar/hero/product image URLs you provide</td><td>Displaying images on your page — we don't host these files, we only store the link you give us</td></tr>
+    <tr><td>Brand deal details you log (brand name, amount, platform, terms text)</td><td>Your private deal tracker, and the red-flag checker</td></tr>
+    <tr><td>Whether each deal is marked public</td><td>Controlling what shows on your public page — private deals are never shown to anyone but you</td></tr>
+    <tr><td>Text you type into the AI website builder/editor</td><td>Generating and editing your site (sent to our AI provider — see below)</td></tr>
+    <tr><td>Standard server logs (IP address, browser type, timestamps)</td><td>Automatically collected by our hosting provider for security and abuse prevention</td></tr>
+  </table>
+
+  <h2>What we don't do</h2>
+  <ul>
+    <li>We don't run advertising trackers, ad pixels, or sell your data to advertisers.</li>
+    <li>We don't currently run analytics software (no Google Analytics or similar) — this may change, and if it does, this policy will be updated first.</li>
+    <li>We don't access your social media accounts. Nothing here connects to Instagram, TikTok, or YouTube on your behalf.</li>
+  </ul>
+
+  <h2>Who we share data with</h2>
+  <p>We use a small number of infrastructure providers to run The Lab. Each only receives what it needs to do its job:</p>
+  <table>
+    <tr><th>Provider</th><th>What it handles</th></tr>
+    <tr><td><strong>Supabase</strong></td><td>Your account, authentication, and all database records described above</td></tr>
+    <tr><td><strong>Vercel</strong></td><td>Hosting the website itself; sees standard server logs</td></tr>
+    <tr><td><strong>Anthropic (Claude)</strong></td><td>Processes the text you submit to the AI website builder/editor (your bio, niche, site content, and edit instructions) in order to generate a response. This text is sent from our server, not your browser.</td></tr>
+    <tr><td><strong>Google Fonts</strong></td><td>Loads typefaces used on this site. Your browser connects directly to Google's servers to fetch font files, which means Google receives your IP address as part of that request, separately from us.</td></tr>
+  </table>
+  <p>We do not sell personal data to any third party.</p>
+
+  <h2>Public vs. private data — read this carefully</h2>
+  <p>Some of what you enter into The Lab is <strong>intentionally public</strong> — your display name, bio, published site content, and any deal you mark "public" are visible to anyone who visits your page, with or without an account. Some is <strong>always private</strong> — your email address, unpublished draft edits, and any deal you mark "private" are never shown to anyone but you.</p>
+
+  <h2>How long we keep data</h2>
+  <p>We keep your account data for as long as your account exists. If you delete your account [self-service deletion is not yet built — contact us directly to request deletion in the meantime], we will delete your profile and deal records from our active database. Some data may persist briefly in backups before being purged.</p>
+
+  <h2>Your rights</h2>
+  <p>Depending on where you live, you may have rights to access, correct, export, or delete your personal data, and to object to certain processing. If you're in South Africa, this is governed by POPIA; if you're in the EU/UK, by GDPR; other regions have their own equivalent laws. To exercise any of these rights right now, contact us directly — self-service tools for this are on the roadmap but not built yet.</p>
+
+  <h2>Cookies and local storage</h2>
+  <p>We use browser storage to keep you logged in — this is strictly necessary for the site to function and isn't used for tracking or advertising. See our <a href="#" style="color:var(--gold);">cookie notice</a> for details.</p>
+
+  <h2>Children</h2>
+  <p>The Lab is not intended for anyone under 18. We don't knowingly collect data from minors.</p>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes in a material way, we'll update the date at the top of this page. Continued use of The Lab after a change means you accept the update.</p>
+
+  <h2>Contact</h2>
+  <p>[Contact email to be added here.]</p>
+</div>
+</body>
+</html>
